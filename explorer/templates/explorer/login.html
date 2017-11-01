@@ -1,0 +1,8 @@
+{% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>{% endif %}
+
+<form action="{% url 'explorer:login' %}" method="post">
+{% csrf_token %}
+<input type="hidden" name="chat_type" value="1" />
+Login: <input type="text" name="chat_user_login" value="" placeholder="+12223334455"/>
+<input type="submit" name="submit" value="Login" />
+</form>
