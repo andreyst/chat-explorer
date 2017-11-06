@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>
+{% else %}
+  <div>
+  {% if not chat_channels %}
+    No chat channels found.
+  {% else %}
+    Found following chat channels:
+    {% for chat_channel in chat_channels %}
+    <div>{{ chat_channel.title }} {{ chat_channel.type_str }}</a> <a class="btn btn-primary" href="{% url 'explorer:save_channel' chat_account_id=chat_account_id remote_id=chat_channel.remote_id remote_type=chat_channel.remote_type %}?title={{ chat_channel.title|urlencode}}&amp;remote_title={{ chat_channel.title|urlencode }}" role="button">Download</a></div>
+    {% endfor %}
+  {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

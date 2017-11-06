@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -120,6 +121,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 TELETHON_SESSIONS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+DEFAULT_USER_NAME = 'default_user'
+DEFAULT_USER_PASSWORD = 'tHFCjVRg8CCktbDwF3ivorutmN'
+
+LOGIN_URL = '/login'
+
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
 try:
     from .local_settings import *

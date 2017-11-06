@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div>
+{% if not saved_channels %}
+  No saved channels found.
+{% else %}
+  Saved channels found:
+  {% for chat_channel in saved_channels %}
+  <div>#{{chat_channel.id}} {{ chat_channel.title }}</a></div>
+  {% endfor %}
+{% endif %}
+</div>
+<a class="btn btn-primary" href="{% url 'explorer:list_chat_accounts' %}" role="button">Add saved channel</a>
+{% endblock %}
