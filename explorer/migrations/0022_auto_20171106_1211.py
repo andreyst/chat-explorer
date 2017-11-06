@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations
-from explorer.models import MessengerType, ChannelType
+from explorer.models import MessengerType, ChatType
 from django.conf import settings
 
 def create_types(apps, schema_editor):
@@ -12,17 +12,17 @@ def create_types(apps, schema_editor):
   messenger_type.name = "Telegram"
   messenger_type.save()
 
-  channel_type = ChannelType()
+  channel_type = ChatType()
   channel_type.id = 1
   channel_type.name = "User"
   channel_type.save()
 
-  channel_type = ChannelType()
+  channel_type = ChatType()
   channel_type.id = 2
   channel_type.name = "Chat"
   channel_type.save()
 
-  channel_type = ChannelType()
+  channel_type = ChatType()
   channel_type.id = 3
   channel_type.name = "Channel"
   channel_type.save()

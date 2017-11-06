@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div>
+{% if not chats %}
+  You do not have any chats imported.
+{% else %}
+  Imported chats:
+  {% for chat in chats %}
+  <div><a href="{% url 'explorer:explore_chat' chat_id=chat.id %}">#{{chat.id}} {{ chat.title }}</a></div>
+  {% endfor %}
+{% endif %}
+</div>
+<a class="btn btn-primary" href="{% url 'explorer:list_accounts' %}" role="button">Add chat</a>
+{% endblock %}

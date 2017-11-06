@@ -1,9 +1,9 @@
 from django.contrib import admin
 
-from .models import ChatAccount, MessengerType, ChatChannel, ChannelType, ChatMessage
+from .models import MessengerType, Account, ChatType, Chat, Message
 
-admin.site.register(ChatAccount)
 admin.site.register(MessengerType)
-admin.site.register(ChatChannel)
-admin.site.register(ChannelType)
-admin.site.register(ChatMessage)
+admin.site.register(Account)
+admin.site.register(ChatType)
+admin.site.register(Chat)
+admin.site.register(Message)

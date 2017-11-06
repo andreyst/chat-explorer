@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>
+{% else %}
+  <div>
+  {% if not chats %}
+    No chats found.
+  {% else %}
+    Found following chats:
+    {% for chat in chats %}
+    <div>{{ chat.title }} {{ chat.type_str }}</a> <a class="btn btn-primary" href="{% url 'explorer:import_remote_chat' account_id=account_id remote_id=chat.remote_id remote_type=chat.remote_type %}?title={{ chat.title|urlencode}}&amp;original_title={{ chat.title|urlencode }}" role="button">Import</a></div>
+    {% endfor %}
+  {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

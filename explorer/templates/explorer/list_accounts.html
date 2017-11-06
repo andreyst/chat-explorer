@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div>
+{% if not accounts %}
+  You do not currently have any chat accounts.
+{% else %}
+  You have following chat accounts:
+  {% for account in accounts %}
+  <div><a href="{% url 'explorer:list_remote_chats' account_id=account.id %}">{{ account.login }}</a></div>
+  {% endfor %}
+{% endif %}
+</div>
+<a class="btn btn-primary" href="{% url 'explorer:add_account' %}" role="button">Add chat account</a>
+{% endblock %}

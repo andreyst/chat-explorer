@@ -13,11 +13,17 @@ body {
   background-color: #eee;
 }
 
-.add-chat-account-form {
+.container {
+  {% block container-style %}{% endblock %}
+}
+
+.add-account-form {
   max-width: 330px;
   padding: 15px;
   margin: 0 auto;
 }
+
+{% block additional-styles %}{% endblock %}
 </style>
 </head>
 <body>
