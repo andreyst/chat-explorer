@@ -72,10 +72,7 @@ def add_account(request):
 
     if not tl_client.is_user_authorized():
       sent_code = tl_client.send_code_request(login)
-      request.session['telegram_phone_hash'] = sent_code.phone_code_hash
-        # .sign_in() may raise PhoneNumberUnoccupiedError
-        # In that case, you need to call .sign_up() to get a new account
-      return redirect("explorer:telegram_sign_in", login=login, telegram_phone_hash=telegram_phone_hash)
+      return redirect("explorer:telegram_sign_in", account_id=account.id, telegram_phone_hash=sent_code.phone_code_hash)
 
     account.signed_in = True
     account.save()
@@ -90,19 +87,26 @@ def telegram_sign_in(request, account_id, telegram_phone_hash):
   if not telegram_phone_hash:
     return redirect("explorer:add_account")
 
+  context = {
+    'account_id': account_id,
+    'telegram_phone_hash': telegram_phone_hash,
+  }
+
   if request.POST.get('submit') is None:
-    return render(request, 'explorer/telegram_sign_in.html', {})
+    return render(request, 'explorer/telegram_sign_in.html', context)
 
   telegram_code = request.POST.get('telegram_code')
   if telegram_code is None:
-    return render(request, 'explorer/telegram_sign_in.html', { 'error_message' : 'Missing telegram code' })
+    context.update({ 'error_message' : 'Missing telegram code' })
+    return render(request, 'explorer/telegram_sign_in.html', context)
   if not re.match(r"^\d+$", telegram_code):
-    return render(request, 'explorer/telegram_sign_in.html', {
-      'error_message' : 'Telegram should not be empty and should contain only digits'
-    })
+    context.update({ 'error_message' : 'Telegram should not be empty and should contain only digits' })
+    return render(request, 'explorer/telegram_sign_in.html', context)
 
   tl_client = TelegramClient(settings.TELETHON_SESSIONS_DIR + "/" + login, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
   rc = tl_client.connect()  # Must return True, otherwise, try again
+  # .sign_in() may raise PhoneNumberUnoccupiedError
+  # In that case, you need to call .sign_up() to get a new account
   telegram_user = tl_client.sign_in(phone=login, code=telegram_code, phone_code_hash=telegram_phone_hash)
 
   if telegram_user and isinstance(telegram_user, TelegramUser):
@@ -120,6 +124,8 @@ def list_remote_chats(request, account_id):
   telethon_session_path = settings.TELETHON_SESSIONS_DIR + "/" + account.login
   tl_client = TelegramClient(telethon_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
   rc = tl_client.connect()  # Must return True, otherwise, try again
+  if rc is not True:
+    redirect("explorer:add_account")
 
   result = ""
   xstr = lambda s: s or ""

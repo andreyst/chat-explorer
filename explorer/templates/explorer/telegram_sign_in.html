@@ -3,7 +3,7 @@
 {% block content %}
 {% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'explorer:telegram_sign_in' %}" method="post">
+<form action="{% url 'explorer:telegram_sign_in' account_id=account_id telegram_phone_hash=telegram_phone_hash %}" method="post">
 {% csrf_token %}
 Telegram has sent you the code, please enter it below<br/>
 Telegram code: <input type="text" name="telegram_code" value="" placeholder="00000"/>
