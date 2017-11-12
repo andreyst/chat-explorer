@@ -64,6 +64,8 @@ max-width: 100%;
 {% block content %}
 <div class="row">
   <div class="col-4">
+    <div class="chat-container" id="chat-container">
+    <div class="chat" id="chat">
     {% if not chat_messages %}
       Chat does not have any messages.
     {% else %}
@@ -84,6 +86,8 @@ max-width: 100%;
       </div>
       {% endfor %}
     {% endif %}
+    </div>
+    </div>
   </div>
   <div class="col-8">
      <div id="chart" class="clearfix"></div>
@@ -93,8 +97,14 @@ max-width: 100%;
   <script src="http://d3js.org/d3.v3.js"></script>
   <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
   <script>
+  var resizeChatContainer = function() {
+    $("#chat-container").height($(window).innerHeight() + "px");
+  };
+  $(window).resize(resizeChatContainer);
+  resizeChatContainer();
+
     var width = 960,
-        height = 750,
+        height = 650,
         cellSize = 25; // cell size
 
     var no_months_in_a_row = Math.floor(width / (cellSize * 7 + 50));
@@ -209,6 +219,7 @@ max-width: 100%;
       .style("position", "absolute")
       .style("z-index", "10")
       .style("visibility", "hidden")
+      .style("display", "none")
       .text("a simple tooltip");
 
     d3.csv("stats.csv?" + Math.floor(Math.random() * 1000), function(error, csv) {
@@ -252,6 +263,7 @@ max-width: 100%;
       function mouseover(d) {
         // console.log(d, data[d]);
         tooltip.style("visibility", "visible");
+        tooltip.style("display", "block");
         tooltip_text = "No data";
         if (data[d] !== undefined) {
           var tooltip_text = d + "<br>" +
