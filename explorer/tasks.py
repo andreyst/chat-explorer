@@ -16,11 +16,29 @@ from django.conf import settings
 from .models import Account, Chat, Message
 from celery.utils.log import get_task_logger
 from django.utils.timezone import make_aware
+from datetime import timedelta
 
 logger = get_task_logger(__name__)
 
-# These example values won't work. You must get your own api_id and
-# api_hash from https://my.telegram.org, under API Development.
+# In UTC
+morning_starts_at = 3 # 6 MSK
+day_starts_at = 9 # 12 MSK
+evening_starts_at = 18 # 21 MSK
+night_starts_at = 20 # 23 MSK
+
+time_shift = morning_starts_at
+
+morning_starts_at -= time_shift
+day_starts_at     -= time_shift
+evening_starts_at -= time_shift
+night_starts_at   -= time_shift
+
+if morning_starts_at <= 0: morning_starts_at += 24
+if day_starts_at     <= 0: day_starts_at += 24
+if evening_starts_at <= 0: mevening_starts_at += 24
+if night_starts_at   <= 0: night_starts_at += 24
+
+# TODO: Make this transactional
 @shared_task
 def sync_telegram_chat(chat_id):
   try:
@@ -28,6 +46,7 @@ def sync_telegram_chat(chat_id):
   except Chat.DoesNotExist:
     logger.info("Channel %s does not exists" % chat_id)
     return False
+
 
   telethon_session = settings.TELETHON_SESSIONS_DIR + "/" + str(chat.account.login)
   client = TelegramClient(telethon_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
@@ -81,8 +100,10 @@ def sync_telegram_chat(chat_id):
       message.account = chat.account
       message.chat = chat
       message.remote_id = tl_message.id
-      # TODO: make aware of correct timezone
-      message.date = make_aware(tl_message.date)
+      date = make_aware(tl_message.date)
+      message.date = date
+      daytime = calc_daytime(date)
+      message.daytime = daytime
       message.from_id = tl_message.from_id
       message.author_name = author_name
       message.text = tl_message.message
@@ -92,6 +113,18 @@ def sync_telegram_chat(chat_id):
     logger.info("Saved %d messages" % len(messages))
 
   return True
+
+def calc_daytime(date):
+  date -= timedelta(hours=time_shift)
+  daytime = Message.DAYTIME_MORNING
+  if date.hour >= night_starts_at:
+    daytime = Message.DAYTIME_NIGHT
+  elif date.hour >= evening_starts_at:
+    daytime = Message.DAYTIME_EVENING
+  elif date.hour >= day_starts_at:
+    daytime = Message.DAYTIME_DAY
+
+  return daytime
 
 @shared_task
 def test(x, y):

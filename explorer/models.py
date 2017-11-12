@@ -38,12 +38,26 @@ class Chat(models.Model):
       return str("%d (%s)" % (self.id, self.title))
 
 class Message(models.Model):
+    DAYTIME_MORNING = 1
+    DAYTIME_DAY = 2
+    DAYTIME_EVENING = 3
+    DAYTIME_NIGHT = 4
+    DAYTIME_CHOICES = (
+        (DAYTIME_MORNING, 'Morning'),
+        (DAYTIME_DAY, 'Day'),
+        (DAYTIME_EVENING, 'Evening'),
+        (DAYTIME_NIGHT, 'Night'),
+    )
+
     id = models.AutoField(primary_key=True)
     remote_id = models.BigIntegerField(default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, default=0)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, default=0)
     date = models.DateTimeField()
+    daytime = models.PositiveSmallIntegerField(
+      choices=DAYTIME_CHOICES,
+      default=0)
     from_id = models.BigIntegerField(default=0)
     author_name = models.CharField(max_length=4096, default='')
     text = models.CharField(max_length=4096)
