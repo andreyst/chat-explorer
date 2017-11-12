@@ -47,7 +47,7 @@ def add_account(request):
     return render(request, 'explorer/add_account.html', {})
 
   try:
-    messenger_type = get_object_or_404(MessengerType, request.POST.get('messenger_type'))
+    messenger_type = get_object_or_404(MessengerType, id=request.POST.get('messenger_type'))
   except MessengerType.DoesNotExist:
     return render(request, 'explorer/add_account.html', { 'error_message' : 'Missing chat type' })
 
