@@ -14,6 +14,8 @@ import pprint
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from .tasks import sync_telegram_chat
+from django.db import connection
+import json
 
 def login(request):
   user = authenticate(request, username=settings.DEFAULT_USER_NAME, password=settings.DEFAULT_USER_PASSWORD)
@@ -208,9 +210,16 @@ def import_remote_chat(request, account_id, remote_id, remote_type):
 def explore_chat(request, chat_id):
   chat = get_object_or_404(Chat, id=chat_id, user=request.user)
   messages = Message.objects.filter(chat_id=chat.id).all()
+  with connection.cursor() as cursor:
+      case = "CASE %s END AS daytime" % " ".join(['WHEN daytime = %s THEN "%s"' % (x[0], x[1]) for x in Message.DAYTIME_CHOICES])
+      sql = 'SELECT date(date), %s, COUNT(*) FROM %s' % (case, Message()._meta.db_table)
+      sql += ' WHERE chat_id = %s GROUP BY date(date), daytime'
+      cursor.execute(sql, [chat.id])
+      stats = cursor.fetchall()
   context = {
     'chat': chat,
     'chat_messages': messages,
+    'stats': json.dumps(stats)
   }
 
   return render(request, 'explorer/explore_chat.html', context)

@@ -102,6 +102,8 @@ max-width: 100%;
   };
   $(window).resize(resizeChatContainer);
   resizeChatContainer();
+  </script>
+  <script>
 
     var width = 960,
         height = 650,
@@ -222,12 +224,17 @@ max-width: 100%;
       .style("display", "none")
       .text("a simple tooltip");
 
-    d3.csv("stats.csv?" + Math.floor(Math.random() * 1000), function(error, csv) {
+    // d3.csv("stats.csv?" + Math.floor(Math.random() * 1000), function(error, csv) {
+      var arr = {{ stats|safe }};
       var data = d3.nest()
-        .key(function(d) { return d.Date; })
-        .rollup(function(d) { return (d[0]); })
-        .map(csv);
-        // console.log(data);
+        .key(function(d) { return d[0]; })
+        .rollup(function(d) {
+          return d.reduce(function(prev, curr) {
+            prev[curr[1]] = curr[2];
+            return prev;
+          }, {'Morning': 0, 'Day': 0, 'Evening': 0, 'Night': 0});
+        })
+        .map(arr);
 
       rect.filter(function(d) { return d in data; })
           .attr("class", function(d) {
@@ -288,7 +295,7 @@ max-width: 100%;
         $tooltip.empty();
       }
 
-    });
+    // });
 
     function dayTitle (t0) {
       return t0.toString().split(" ")[2];
