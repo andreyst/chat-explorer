@@ -72,7 +72,7 @@ def sync_telegram_chat(chat_id):
   author_names = {}
 
   while True:
-    (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=3, offset_id=offset_id)
+    (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=100, offset_id=offset_id)
     if len(messages_slice) == 0:
       break
 
