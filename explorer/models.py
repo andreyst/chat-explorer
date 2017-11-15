@@ -70,4 +70,5 @@ class Message(models.Model):
     class Meta:
       indexes = [
           models.Index(fields=['chat_id', 'date', 'remote_id']),
+          models.Index(fields=['chat_id', 'remote_id']),
       ]
