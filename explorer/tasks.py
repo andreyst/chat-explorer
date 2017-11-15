@@ -14,6 +14,7 @@ import json
 import sys
 from django.conf import settings
 from .models import Account, Chat, Message
+from django.db.models import Max
 from celery.utils.log import get_task_logger
 from django.utils.timezone import make_aware
 from datetime import timedelta
@@ -71,46 +72,54 @@ def sync_telegram_chat(chat_id):
   author_ids = set()
   author_names = {}
 
-  while True:
-    (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=100, offset_id=offset_id)
-    if len(messages_slice) == 0:
+  max_remote_id = Message.objects.filter(chat_id=chat.id).aggregate(Max('remote_id'))
+  max_remote_id = max_remote_id['remote_id__max']
+
+  slice_len = 0
+  (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=100, offset_id=offset_id)
+
+  if len(messages_slice) > 0:
+    offset_id = messages_slice[-1].id
+  # eprint("%s, %s" % (messages_slice[-1].date, len(messages_slice)))
+
+  messages = []
+
+  for tl_message in messages_slice:
+    if tl_message.id == max_remote_id:
       break
 
-    offset_id = messages_slice[-1].id
-    # eprint("%s, %s" % (messages_slice[-1].date, len(messages_slice)))
+    if not isinstance(tl_message, TlMessage):
+      logger.info("Skipping non-message %s" % pprint.pformat(tl_message))
+      continue
 
-    messages = []
+    if tl_message.from_id not in author_ids:
+      author = client.get_entity(PeerUser(tl_message.from_id))
+      author_name = author.first_name
+      if author.last_name is not None:
+        author_name += " " + author.last_name
+      author_names[tl_message.from_id] = author_name
+      author_ids.add(tl_message.from_id)
 
-    for tl_message in messages_slice:
-      if not isinstance(tl_message, TlMessage):
-        logger.info("Skipping non-message %s" % pprint.pformat(tl_message))
-        continue
+    author_name = author_names[tl_message.from_id]
+    message = Message()
+    message.user = chat.user
+    message.account = chat.account
+    message.chat = chat
+    message.remote_id = tl_message.id
+    date = make_aware(tl_message.date)
+    message.date = date
+    daytime = calc_daytime(date)
+    message.daytime = daytime
+    message.from_id = tl_message.from_id
+    message.author_name = author_name
+    message.text = tl_message.message
+    messages.append(message)
 
-      if tl_message.from_id not in author_ids:
-        author = client.get_entity(PeerUser(tl_message.from_id))
-        author_name = author.first_name
-        if author.last_name is not None:
-          author_name += " " + author.last_name
-        author_names[tl_message.from_id] = author_name
-        author_ids.add(tl_message.from_id)
+  Message.objects.bulk_create(messages)
+  logger.info("Saved %d messages" % len(messages))
 
-      author_name = author_names[tl_message.from_id]
-      message = Message()
-      message.user = chat.user
-      message.account = chat.account
-      message.chat = chat
-      message.remote_id = tl_message.id
-      date = make_aware(tl_message.date)
-      message.date = date
-      daytime = calc_daytime(date)
-      message.daytime = daytime
-      message.from_id = tl_message.from_id
-      message.author_name = author_name
-      message.text = tl_message.message
-      messages.append(message)
-
-    Message.objects.bulk_create(messages)
-    logger.info("Saved %d messages" % len(messages))
+  if len(messages) > 0:
+    sync_telegram_chat.delay(chat.id)
 
   return True
 
