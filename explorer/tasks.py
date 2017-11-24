@@ -41,7 +41,7 @@ if night_starts_at   <= 0: night_starts_at += 24
 
 # TODO: Make this transactional
 @shared_task
-def sync_telegram_chat(chat_id):
+def sync_telegram_chat(chat_id, offset_id=0):
   try:
     chat = Chat.objects.get(id=chat_id)
   except Chat.DoesNotExist:
@@ -68,12 +68,12 @@ def sync_telegram_chat(chat_id):
     raise ValueError("Unknown channel type " + chat.remote_type)
 
   chat_tl_entity = client.get_entity(peer)
-  offset_id = 0
   author_ids = set()
   author_names = {}
 
-  max_remote_id = Message.objects.filter(chat_id=chat.id).aggregate(Max('remote_id'))
+  max_remote_id = Message.objects.filter(chat_id=chat.id, remote_id__lt=offset_id).aggregate(Max('remote_id'))
   max_remote_id = max_remote_id['remote_id__max']
+  logger.info("Max remote id: %s" % max_remote_id)
 
   slice_len = 0
   (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=100, offset_id=offset_id)
@@ -86,6 +86,7 @@ def sync_telegram_chat(chat_id):
 
   for tl_message in messages_slice:
     if tl_message.id == max_remote_id:
+      logger.info("Downloaded message with max remote id: %s" % max_remote_id)
       break
 
     if not isinstance(tl_message, TlMessage):
@@ -119,7 +120,8 @@ def sync_telegram_chat(chat_id):
   logger.info("Saved %d messages" % len(messages))
 
   if len(messages) > 0:
-    sync_telegram_chat.delay(chat.id)
+    logger.info("Sending next batch from offset_id=%s" % offset_id)
+    sync_telegram_chat.delay(chat.id, offset_id)
 
   return True
 
