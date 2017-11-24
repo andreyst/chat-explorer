@@ -20,6 +20,7 @@ Starting chatexplorer_redis_1 ...
 Starting chatexplorer_redis_1 ... done
 
 $ celery -A chatexplorer worker -l info
+
 (...celery will run in foreground)
 
 $ python3 manage.py runserver
