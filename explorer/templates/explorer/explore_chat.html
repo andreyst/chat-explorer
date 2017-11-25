@@ -236,15 +236,37 @@ max-width: 100%;
         })
         .map(arr);
 
+      function dayMessagesCount(dayMessagesCounts) {
+        return dayMessagesCounts.Morning + dayMessagesCounts.Day + dayMessagesCounts.Evening + dayMessagesCounts.Night;
+      }
+
+      var calcDayData = function(date, day) {
+        dayNum = new Date(Date.parse(date)).getDay();
+        count = dayMessagesCount(day)
+        text = count.toString()
+        color = "good";
+        if (dayNum === 5 || dayNum === 6) {
+          if (count > 5) {
+            color = "bad";
+          } else {
+            color = "ok";
+          }
+          text = count;
+        } else if (day.Night > 5) {
+          color = "bad";
+          text = "(" + day.Night.toString() + ")";
+        } else if (day.Night > 0 || day.Evening > 0) {
+          color = "ok";
+          text = "(" + (day.Night + day.Evening).toString() + ")";
+        }
+
+        return { 'color': color, 'text': text };
+      }
+
       rect.filter(function(d) { return d in data; })
           .attr("class", function(d) {
-            color = "good";
-            if (data[d].Night > 5) {
-              color = "bad";
-            } else if (data[d].Night > 0 && data[d].Night <= 5 || data[d].Evening > 0) {
-              color = "ok";
-            }
-            return "day " + color
+            dayData = calcDayData(d, data[d]);
+            return "day " + dayData.color;
           });
         // .select("title")
           // .text(function(d) { return d + ": " + data[d].Night; });
@@ -252,15 +274,9 @@ max-width: 100%;
       texts.filter(function(d) { return d in data; })
         .text(function(d) {
           console.log(d);
-          if (data[d]===undefined) return "";
-            text = parseInt(data[d].Morning, 10) + parseInt(data[d].Day, 10);
-            if (data[d].Night > 0) {
-              text = data[d].Night;
-            } else if (data[d].Evening > 0) {
-              text = data[d].Evening;
-            }
-            return text;
-         });
+          dayData = calcDayData(d, data[d]);
+          return dayData.text;
+        });
 
       //  Tooltip
       rect.on("mouseover", mouseover);
