@@ -71,6 +71,10 @@ max-width: 100%;
     {% else %}
       <h3>Chat "{{ chat.title }} (#{{ chat.id }})"</h3>
       {% for message in chat_messages %}
+      {% ifchanged %}
+      <a id="{{ message.date|date:"Y-m-d" }}" href="#{{ message.date|date:"Y-m-d" }}"></a>
+      <div style="margin-left: 50px">-- {{ message.date|date:"Y-m-d" }} --</div>
+      {% endifchanged %}
       <div class="row" style="margin-top: 10px">
         <div class="col-6">
           <strong>{{ message.author_name }}</strong>
@@ -279,10 +283,21 @@ max-width: 100%;
         });
 
       //  Tooltip
+      rect.on("click", click);
       rect.on("mouseover", mouseover);
       rect.on("mouseout", mouseout);
+      texts.on("click", click);
       texts.on("mouseover", mouseover);
       texts.on("mouseout", mouseout);
+      function click(d) {
+        var $container = $('#chat'),
+            $scrollTo = $('#' + d);
+
+        // Or you can animate the scrolling:
+        $container.animate({
+            scrollTop: $scrollTo.offset().top - $container.offset().top + $container.scrollTop()
+        });
+      }
       function mouseover(d) {
         // console.log(d, data[d]);
         tooltip.style("visibility", "visible");
