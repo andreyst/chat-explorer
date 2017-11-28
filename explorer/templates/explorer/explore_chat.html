@@ -110,7 +110,7 @@ max-width: 100%;
   <script>
 
     var width = 960,
-        height = 650,
+        height = 750,
         cellSize = 25; // cell size
 
     var no_months_in_a_row = Math.floor(width / (cellSize * 7 + 50));
@@ -119,7 +119,7 @@ max-width: 100%;
     var day = d3.time.format("%w"), // day of the week
         day_of_month = d3.time.format("%e") // day of the month
         day_of_year = d3.time.format("%j")
-        week = d3.time.format("%U"), // week number of the year
+        week = d3.time.format("%W"), // week number of the year
         month = d3.time.format("%m"), // month number
         year = d3.time.format("%Y"),
         percent = d3.format(".1%"),
