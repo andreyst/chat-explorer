@@ -165,7 +165,9 @@ max-width: 100%;
         .attr("height", cellSize)
         .attr("x", function(d) {
           var month_padding = 1.2 * cellSize*7 * ((month(d)-1) % (no_months_in_a_row));
-          return day(d) * cellSize + month_padding;
+          var dayNum = day(d) - 1;
+          if (dayNum === -1) dayNum = 6;
+          return dayNum * cellSize + month_padding;
         })
         .attr("y", function(d) {
           var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
@@ -180,7 +182,9 @@ max-width: 100%;
       .style("font-size", "0.7em")
       .attr("x", function(d) {
         var month_padding = 1.2 * cellSize*7 * ((month(d)-1) % (no_months_in_a_row));
-        return day(d) * cellSize + cellSize / 2 + month_padding;
+        var dayNum = day(d) - 1;
+        if (dayNum === -1) dayNum = 6;
+        return dayNum * cellSize + cellSize / 2 + month_padding;
       })
       .attr("y", function(d) {
         var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
@@ -249,7 +253,7 @@ max-width: 100%;
         count = dayMessagesCount(day)
         text = count.toString()
         color = "good";
-        if (dayNum === 5 || dayNum === 6) {
+        if (dayNum === 0 || dayNum === 6) {
           if (count > 5) {
             color = "bad";
           } else {
