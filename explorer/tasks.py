@@ -36,7 +36,7 @@ night_starts_at   -= time_shift
 
 if morning_starts_at <= 0: morning_starts_at += 24
 if day_starts_at     <= 0: day_starts_at += 24
-if evening_starts_at <= 0: mevening_starts_at += 24
+if evening_starts_at <= 0: evening_starts_at += 24
 if night_starts_at   <= 0: night_starts_at += 24
 
 # TODO: Make this transactional
