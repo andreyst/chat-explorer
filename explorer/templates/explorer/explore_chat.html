@@ -80,7 +80,7 @@ max-width: 100%;
           <strong>{{ message.author_name }}</strong>
         </div>
         <div class="col">
-          <small>{{ message.date }}</small>
+          <small>{{ message.date|date:"Y-m-d H:i:s" }}</small>
         </div>
       </div>
       <div class="row">
@@ -160,7 +160,7 @@ max-width: 100%;
         // .datum(format);
 
     var rect = gr.append("rect")
-        .attr("class", "day")
+        .attr("class", "day good")
         .attr("width", cellSize)
         .attr("height", cellSize)
         .attr("x", function(d) {
@@ -193,6 +193,7 @@ max-width: 100%;
       })
       .attr("text-anchor", "middle")
       .attr("alignment-baseline", "middle")
+      .text("0")
       .datum(format);
 
     var month_titles = svg.selectAll(".month-title")  // Jan, Feb, Mar and the whatnot
