@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load tz %}
+
 {% block container-style %}
 width: auto;
 max-width: 100%;
@@ -72,15 +74,15 @@ max-width: 100%;
       <h3>Chat "{{ chat.title }} (#{{ chat.id }})"</h3>
       {% for message in chat_messages %}
       {% ifchanged %}
-      <a id="{{ message.date|date:"Y-m-d" }}" href="#{{ message.date|date:"Y-m-d" }}"></a>
-      <div style="margin-left: 50px">-- {{ message.date|date:"Y-m-d" }} --</div>
+      <a id="{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d"}}" href="#{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }}"></a>
+      <div style="margin-left: 50px">-- {{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }} --</div>
       {% endifchanged %}
       <div class="row" style="margin-top: 10px">
         <div class="col-6">
           <strong>{{ message.author_name }}</strong>
         </div>
         <div class="col">
-          <small>{{ message.date|date:"Y-m-d H:i:s" }}</small>
+          <small>{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d H:i:s" }}</small>
         </div>
       </div>
       <div class="row">
