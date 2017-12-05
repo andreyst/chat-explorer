@@ -8,6 +8,8 @@ from django.conf import settings
 
 def create_default_user(apps, schema_editor):
   default_user = User.objects.create_user(settings.DEFAULT_USER_NAME, password=settings.DEFAULT_USER_PASSWORD)
+  default_user.is_staff = True
+  default_user.is_superuser = True
   default_user.save()
 
 class Migration(migrations.Migration):
