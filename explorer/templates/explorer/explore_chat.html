@@ -266,7 +266,7 @@ max-width: 100%;
         } else if (day.Night > 5) {
           color = "bad";
           text = "(" + day.Night.toString() + ")";
-        } else if (day.Night > 0 || day.Evening > 0) {
+        } else if (day.Night > 0 || day.Evening > 2) {
           color = "ok";
           text = "(" + (day.Night + day.Evening).toString() + ")";
         }
