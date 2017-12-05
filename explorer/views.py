@@ -69,7 +69,7 @@ def add_account(request):
     account.save()
 
   if messenger_type.id == 1:
-    tl_client = TelegramClient(settings.TELETHON_SESSIONS_DIR + "/" + login, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+    tl_client = TelegramClient(settings.TELETHON_SESSIONS_DIR + "/" + request.user.id + "_" + login, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
     rc = tl_client.connect()  # Must return True, otherwise, try again
 
     if not tl_client.is_user_authorized():
@@ -105,7 +105,7 @@ def telegram_sign_in(request, account_id, telegram_phone_hash):
     context.update({ 'error_message' : 'Telegram should not be empty and should contain only digits' })
     return render(request, 'explorer/telegram_sign_in.html', context)
 
-  tl_client = TelegramClient(settings.TELETHON_SESSIONS_DIR + "/" + login, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+  tl_client = TelegramClient(settings.TELETHON_SESSIONS_DIR + "/" + request.user.id + "_" + login, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
   rc = tl_client.connect()  # Must return True, otherwise, try again
   # .sign_in() may raise PhoneNumberUnoccupiedError
   # In that case, you need to call .sign_up() to get a new account
@@ -123,7 +123,7 @@ def telegram_sign_in(request, account_id, telegram_phone_hash):
 def list_remote_chats(request, account_id):
   account = get_object_or_404(Account, user=request.user, id=account_id)
 
-  telethon_session_path = settings.TELETHON_SESSIONS_DIR + "/" + account.login
+  telethon_session_path = settings.TELETHON_SESSIONS_DIR + "/" + request.user.id + "_" + account.login
   tl_client = TelegramClient(telethon_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
   rc = tl_client.connect()  # Must return True, otherwise, try again
   if rc is not True:
