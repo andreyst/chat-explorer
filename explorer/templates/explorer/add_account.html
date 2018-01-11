@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 
+{% block content-header %}Add chat account{% endblock %}
 {% block content %}
 <form class="add-account-form" action="{% url 'explorer:add_account' %}" method="post">
   {% csrf_token %}

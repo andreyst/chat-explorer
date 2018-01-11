@@ -2,12 +2,18 @@
 
 {% load tz %}
 
-{% block container-style %}
-width: auto;
-max-width: 100%;
-{% endblock %}
+{% block container-style %}container-fluid{% endblock %}
 
 {% block additional-styles %}
+      .content {
+      padding-bottom: 0;
+    }
+    .box-content {
+    margin-bottom: 0;
+  }
+    .box-body-content {
+    padding-bottom: 0;
+  }
       #chart{
         width: 800px;
         margin: 0 auto;
@@ -61,41 +67,44 @@ max-width: 100%;
         border: 2px solid #ccc;
         padding: 10px;
       }
+
+      .direct-chat-text {
+        word-wrap:break-word;
+        margin-left: 0;
+    }
 {% endblock %}
 
+{% block content-header %}Chat "{{ chat.title }} (#{{ chat.id }})"{% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-4">
+  <div class="col-md-4" id="chat-container-col">
     <div class="chat-container" id="chat-container">
     <div class="chat" id="chat">
+
     {% if not chat_messages %}
       Chat does not have any messages.
     {% else %}
-      <h3>Chat "{{ chat.title }} (#{{ chat.id }})"</h3>
       {% for message in chat_messages %}
       {% ifchanged %}
       <a id="{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d"}}" href="#{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }}"></a>
-      <div style="margin-left: 50px">-- {{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }} --</div>
+      <div class="badge bg-aqua">{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }}</div>
       {% endifchanged %}
-      <div class="row" style="margin-top: 10px">
-        <div class="col-6">
-          <strong>{{ message.author_name }}</strong>
+        <!-- Message. Default to the left -->
+        <div class="direct-chat-msg">
+          <div class="direct-chat-info clearfix">
+            <span class="direct-chat-name pull-left">{{ message.author_name }}</span>
+            <span class="direct-chat-timestamp pull-right">{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d H:i:s" }}</span>
+          </div>
+          <div class="direct-chat-text">{{ message.text }}</div>
+          <!-- /.direct-chat-text -->
         </div>
-        <div class="col">
-          <small>{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d H:i:s" }}</small>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col">
-          <p>{{ message.text }}</p>
-        </div>
-      </div>
+        <!-- /.direct-chat-msg -->
       {% endfor %}
     {% endif %}
     </div>
     </div>
   </div>
-  <div class="col-8">
+  <div class="col-md-8">
      <div id="chart" class="clearfix"></div>
   </div>
 </div>
@@ -104,10 +113,11 @@ max-width: 100%;
   <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
   <script>
   var resizeChatContainer = function() {
-    $("#chat-container").height($(window).innerHeight() + "px");
+    $("#chat-container").height(($(window).innerHeight() - $("#chat-container").offset().top) + "px");
   };
   $(window).resize(resizeChatContainer);
   resizeChatContainer();
+  $('#chat').scrollTop($('#chat')[0].scrollHeight);
   </script>
   <script>
 
@@ -284,7 +294,7 @@ max-width: 100%;
 
       texts.filter(function(d) { return d in data; })
         .text(function(d) {
-          console.log(d);
+          // console.log(d);/
           dayData = calcDayData(d, data[d]);
           return dayData.text;
         });
@@ -300,7 +310,6 @@ max-width: 100%;
         var $container = $('#chat'),
             $scrollTo = $('#' + d);
 
-        // Or you can animate the scrolling:
         $container.animate({
             scrollTop: $scrollTo.offset().top - $container.offset().top + $container.scrollTop()
         });

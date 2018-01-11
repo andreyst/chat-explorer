@@ -1,15 +1,34 @@
 {% extends "base.html" %}
 
+{% block additional-styles %}
+    .box-body-content {
+    padding: 0;
+  }
+{% endblock %}
+
+{% block content-header %}
+  {% if from == 'import' %}
+    Choose chat account to import from
+  {% else %}
+    Saved chat accounts
+  {% endif %} <a class="btn btn-primary pull-right" href="{% url 'explorer:add_account' %}" role="button"><i class="fa fa-plus">&nbsp;</i> Add chat account</a>{% endblock %}
+  }
 {% block content %}
 <div>
 {% if not accounts %}
   You do not currently have any chat accounts.
 {% else %}
-  You have following chat accounts:
-  {% for account in accounts %}
-  <div><a href="{% url 'explorer:list_remote_chats' account_id=account.id %}">{{ account.login }}</a></div>
-  {% endfor %}
+  <div class="box-body no-padding">
+    <table class="table table-striped">
+      <tbody>
+      {% for account in accounts %}
+        <tr>
+          <td><h4><a href="{% url 'explorer:list_remote_chats' account_id=account.id %}">{{ account.login }}</a></h4></td>
+        </tr>
+      {% endfor %}
+    </tbody></table>
+  </div>
 {% endif %}
 </div>
-<a class="btn btn-primary" href="{% url 'explorer:add_account' %}" role="button">Add chat account</a>
+
 {% endblock %}
