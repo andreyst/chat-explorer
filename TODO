@@ -1,6 +1,10 @@
+TODO:
  ☐ Move out Message author to separate entity
  ☐ Add "uploading status" for chat
- ☐ Add button for reuploading
- ☐ Fix simultaneous uploading
- ☐ Add history downloading in batch
- ☐ Use good HTML template
+ ☐ Add button for download
+ ☐ Fix multiple simultaneous chat download
+ ☐ Add possibility to reset chat account status / reauth
+ ☐ Detect when chat account status is incorrect and allow user to reconfigure it
+ ✔ Add history downloading in batch @done (18-01-12 00:02)
+ ✔ Use good HTML template @done (18-01-12 00:02)
+
