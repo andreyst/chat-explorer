@@ -75,7 +75,10 @@ def sync_telegram_chat(chat_id, offset_id=0):
   author_ids = set()
   author_names = {}
 
-  max_remote_id = Message.objects.filter(chat_id=chat.id, remote_id__lt=offset_id).aggregate(Max('remote_id'))
+  if offset_id > 0:
+    max_remote_id = Message.objects.filter(chat_id=chat.id, remote_id__lt=offset_id).aggregate(Max('remote_id'))
+  else:
+    max_remote_id = Message.objects.filter(chat_id=chat.id).aggregate(Max('remote_id'))
   max_remote_id = max_remote_id['remote_id__max']
   logger.info("Max remote id: %s" % max_remote_id)
 
