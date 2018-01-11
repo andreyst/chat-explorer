@@ -48,13 +48,17 @@ def sync_telegram_chat(chat_id, offset_id=0):
     logger.info("Channel %s does not exists" % chat_id)
     return False
 
+  telethon_session = settings.TELETHON_SESSIONS_DIR + "/" + str(chat.account.user_id) + "_" + str(chat.account.login)
+  logger.info("Telethon session: %s" % telethon_session)
 
-  telethon_session = settings.TELETHON_SESSIONS_DIR + "/" + str(chat.account.login)
   client = TelegramClient(telethon_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
-  client.connect()  # Must return True, otherwise, try again
+  rc = client.connect()  # Must return True, otherwise, try again
+  if not rc:
+    logger.error("Chat account %s is not connected" % chat.account.login)
+    return False
 
   if not client.is_user_authorized():
-    logger.info("Chat account %s is not authorized" % chat.account.login)
+    logger.error("Chat account %s is not authorized" % chat.account.login)
     return False
 
   # chat
