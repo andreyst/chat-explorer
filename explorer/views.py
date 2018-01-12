@@ -203,7 +203,7 @@ def list_remote_chats(request, account_id):
 def import_remote_chat(request, account_id, remote_id, remote_type):
   try:
     chat = Chat.objects.get(user=request.user, account_id=account_id, remote_id=remote_id)
-    message = "This chat is already imported #%d \"%s\" " % (chat.id, chat.title)
+    message = "This chat is already imported #%d \"%s\", updating it " % (chat.id, chat.title)
     messages.add_message(request, messages.INFO, message)
   except Chat.DoesNotExist:
     account = get_object_or_404(Account, user=request.user, id=account_id)
