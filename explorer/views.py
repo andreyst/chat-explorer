@@ -41,7 +41,11 @@ def index(request):
 @login_required
 def list_accounts(request):
   accounts = Account.objects.filter(user=request.user).all()
-  return render(request, 'explorer/list_accounts.html', { 'accounts': accounts })
+  context = {
+    'accounts': accounts,
+    'from' : request.GET.get('from', '')
+  }
+  return render(request, 'explorer/list_accounts.html', context)
 
 @login_required
 def add_account(request):
