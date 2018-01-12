@@ -133,50 +133,67 @@ def list_remote_chats(request, account_id):
   xstr = lambda s: s or ""
   chats = []
 
-  [ dialogs, entities ] = tl_client.get_dialogs()
-  for dialog in dialogs:
-    if isinstance(dialog.peer, PeerUser):
-      user = tl_client.get_entity(PeerUser(dialog.peer.user_id))
-      title = xstr(user.first_name) + " " + xstr(user.last_name)
-      chat = {
-        'title': title,
-        'type_str': "(user)",
-        'remote_id': dialog.peer.user_id,
-        'remote_type': 1,
-        'original_title': title,
-      }
-    elif isinstance(dialog.peer, PeerChat):
-      chat = tl_client.get_entity(PeerChat(dialog.peer.chat_id))
-      title = chat.title
-      chat = {
-        'title': title,
-        'type_str': "(chat)",
-        'remote_id': dialog.peer.chat_id,
-        'remote_type': 2,
-        'original_title': title,
-      }
-    elif isinstance(dialog.peer, PeerChannel):
-      channel = tl_client.get_entity(PeerChannel(dialog.peer.channel_id))
-      title = channel.title
-      chat = {
-        'title': title,
-        'type_str': "(channel)",
-        'remote_id': dialog.peer.channel_id,
-        'remote_type': 3,
-        'original_title': title,
-      }
-    else:
-      title = "Unknown type:" + pprint.pformat(dialog.peer)
-      chat = {
-        'title': title,
-        'remote_id': 0,
-        'original_title': title,
-      }
+  limit = 5
+  offset_date = None
 
-    chats.append(chat)
+  while limit > 0:
+    limit -= 1
+    result = tl_client(GetDialogsRequest(
+                                        offset_date=offset_date,
+                                        offset_id=0,
+                                        offset_peer = InputPeerEmpty(),
+                                        limit=10
+                                      ))
+
+    for dialog in result.dialogs:
+      if isinstance(dialog.peer, PeerUser):
+        user = tl_client.get_entity(PeerUser(dialog.peer.user_id))
+        title = xstr(user.first_name) + " " + xstr(user.last_name)
+        chat = {
+          'title': title,
+          'type_str': "User",
+          'remote_id': dialog.peer.user_id,
+          'remote_type': 1,
+          'original_title': title,
+        }
+      elif isinstance(dialog.peer, PeerChat):
+        chat = tl_client.get_entity(PeerChat(dialog.peer.chat_id))
+        title = chat.title
+        chat = {
+          'title': title,
+          'type_str': "Chat",
+          'remote_id': dialog.peer.chat_id,
+          'remote_type': 2,
+          'original_title': title,
+        }
+      elif isinstance(dialog.peer, PeerChannel):
+        channel = tl_client.get_entity(PeerChannel(dialog.peer.channel_id))
+        title = channel.title
+        chat = {
+          'title': title,
+          'type_str': "Channel",
+          'remote_id': dialog.peer.channel_id,
+          'remote_type': 3,
+          'original_title': title,
+        }
+      else:
+        title = "Unknown type:" + pprint.pformat(dialog.peer)
+        chat = {
+          'title': title,
+          'remote_id': 0,
+          'original_title': title,
+        }
+
+      chats.append(chat)
+
+    if not result.messages:
+        break
+
+    offset_date = min(msg.date for msg in result.messages)
 
   context = {
     'account_id': account.id,
+    'account_login': account.login,
     'chats': chats
   }
 
