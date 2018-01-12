@@ -1,5 +1,6 @@
 TODO:
  ☐ Move out Message author to separate entity
+ ☐ Add xhr history loading
  ☐ Add "uploading status" for chat
  ☐ Add button for download
  ☐ Fix multiple simultaneous chat download
