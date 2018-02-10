@@ -1,3 +1,9 @@
+# Chat Explorer (alpha)
+
+A tool to expore statistics of your chats on popular messengers. Currently only Telegram.
+
+Current version allows you to download your chat and build a heatmap of messages during the year.
+
 # Installation
 
 1. Clone this repo from github
