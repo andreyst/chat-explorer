@@ -1,21 +1,22 @@
+from .models import MessengerType, Account, ChatType, Chat, Message
+from .tasks import sync_telegram_chat
+from datetime import datetime
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, login as django_login, logout as django_logout
+from django.contrib.auth.decorators import login_required
+from django.db import connection
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.shortcuts import render, redirect
 from telethon import TelegramClient
-from telethon.tl.types import User as TelegramUser
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from django.conf import settings
-import re
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login as django_login, logout as django_logout
-from .models import MessengerType, Account, ChatType, Chat, Message
-import pprint
-from django.shortcuts import get_object_or_404
-from django.contrib import messages
-from .tasks import sync_telegram_chat
-from django.db import connection
+from telethon.tl.types import PeerUser, PeerChat, PeerChannel
+from telethon.tl.types import User as TelegramUser
 import json
+import pprint
+import re
 
 def login(request):
   user = authenticate(request, username=settings.DEFAULT_USER_NAME, password=settings.DEFAULT_USER_PASSWORD)

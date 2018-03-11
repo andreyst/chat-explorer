@@ -1,23 +1,23 @@
-# Create your tasks here
 from __future__ import absolute_import, unicode_literals
 from __future__ import print_function
+from .models import Account, Chat, Message
 from celery import shared_task
+from celery.utils.log import get_task_logger
+from datetime import timedelta
+from django.conf import settings
+from django.db.models import Max
+from django.db import transaction
+from django.utils.timezone import make_aware
 from telethon import TelegramClient
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty
 from telethon.tl.types import Message as TlMessage
+from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 from time import sleep
+import json
 import os
 import pprint
-import json
 import sys
-from django.conf import settings
-from .models import Account, Chat, Message
-from django.db.models import Max
-from celery.utils.log import get_task_logger
-from django.utils.timezone import make_aware
-from datetime import timedelta
 
 logger = get_task_logger(__name__)
 
