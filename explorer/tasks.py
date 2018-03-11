@@ -41,7 +41,9 @@ if night_starts_at   <= 0: night_starts_at += 24
 
 # TODO: Make this transactional
 @shared_task
-def sync_telegram_chat(chat_id, offset_id=0):
+def sync_telegram_chat(chat_id, update_generation):
+  logger.info("Starting update iteration of chat %s with update generation %s" % (chat_id, update_generation))
+
   try:
     chat = Chat.objects.get(id=chat_id)
   except Chat.DoesNotExist:
@@ -49,7 +51,7 @@ def sync_telegram_chat(chat_id, offset_id=0):
     return False
 
   telethon_session = settings.TELETHON_SESSIONS_DIR + "/" + str(chat.account.user_id) + "_" + str(chat.account.login)
-  logger.info("Telethon session: %s" % telethon_session)
+  logger.debug("Telethon session: %s" % telethon_session)
 
   client = TelegramClient(telethon_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
   rc = client.connect()  # Must return True, otherwise, try again
@@ -75,25 +77,25 @@ def sync_telegram_chat(chat_id, offset_id=0):
   author_ids = set()
   author_names = {}
 
-  if offset_id > 0:
-    max_remote_id = Message.objects.filter(chat_id=chat.id, remote_id__lt=offset_id).aggregate(Max('remote_id'))
+  if chat.continue_update_from > 0:
+    max_remote_id = Message.objects.filter(chat_id=chat.id, remote_id__lt=chat.continue_update_from).aggregate(Max('remote_id'))
   else:
     max_remote_id = Message.objects.filter(chat_id=chat.id).aggregate(Max('remote_id'))
   max_remote_id = max_remote_id['remote_id__max']
-  logger.info("Max remote id: %s" % max_remote_id)
+  logger.info("Max remote id: %s" % (max_remote_id))
 
   slice_len = 0
-  (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=100, offset_id=offset_id)
+  (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=100, offset_id=chat.continue_update_from)
 
-  if len(messages_slice) > 0:
-    offset_id = messages_slice[-1].id
-  # eprint("%s, %s" % (messages_slice[-1].date, len(messages_slice)))
+  logger.info("Retrieved %d messages" % (len(messages_slice)))
 
   messages = []
+  is_max_remote_id_found = False
 
   for tl_message in messages_slice:
     if tl_message.id == max_remote_id:
-      logger.info("Downloaded message with max remote id: %s" % max_remote_id)
+      is_max_remote_id_found = True
+      logger.info("Found message with max remote id: %s" % max_remote_id)
       break
 
     if not isinstance(tl_message, TlMessage):
@@ -123,12 +125,35 @@ def sync_telegram_chat(chat_id, offset_id=0):
     message.text = tl_message.message
     messages.append(message)
 
-  Message.objects.bulk_create(messages)
-  logger.info("Saved %d messages" % len(messages))
+  logger.info("Prepared %d messages to save" % (len(messages)))
 
   if len(messages) > 0:
-    logger.info("Sending next batch from offset_id=%s" % offset_id)
-    sync_telegram_chat.delay(chat.id, offset_id)
+    with transaction.atomic():
+      sid = transaction.savepoint()
+
+      Message.objects.bulk_create(messages)
+      affected_rows = Chat.objects.filter(id=chat.id, update_generation=update_generation).update(
+        continue_update_from=messages[-1].remote_id
+      )
+
+      if affected_rows != 1:
+        transaction.savepoint_rollback(sid)
+        logger.warn("Failed to save %d messages because chat have changed its update generation from %s" % (len(messages), update_generation))
+        return False
+
+      transaction.savepoint_commit(sid)
+      logger.info("Saved %d messages" % (len(messages)))
+
+  if is_max_remote_id_found or len(messages_slice) == 0:
+    logger.info("Update fully completed, is_max_remote_id_found=%s, len(messages_slice)=%s" % (is_max_remote_id_found, len(messages_slice)))
+    chat.is_being_updated = False
+    chat.continue_update_from = 0
+    chat.save()
+  else:
+    logger.info("Scheduling next batch retrieval from id=%s" % (chat.continue_update_from))
+    sync_telegram_chat.delay(chat.id, update_generation)
+
+  logger.info("Finished update iteration of chat %s with update generation %s" % (chat_id, update_generation))
 
   return True
 

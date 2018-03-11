@@ -224,7 +224,17 @@ def import_remote_chat(request, account_id, remote_id, remote_type):
     chat.original_title = original_title
     chat.save()
 
-  sync_telegram_chat.delay(chat.id)
+  new_update_generation = chat.update_generation + 1
+  affected_rows = Chat.objects.filter(id=chat.id, is_being_updated=False, update_generation=chat.update_generation).update(
+    update_generation=new_update_generation,
+    is_being_updated=True,
+    update_started_at=datetime.now()
+  )
+
+  if affected_rows != 1:
+    raise RuntimeError("Cannot initiate update of chat, somebody else has already updated it, please try again")
+
+  sync_telegram_chat.delay(chat.id, new_update_generation)
 
   return redirect('explorer:index');
 

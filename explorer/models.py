@@ -33,6 +33,10 @@ class Chat(models.Model):
     account = models.ForeignKey(Account, on_delete=models.CASCADE, default=0)
     title = models.CharField(max_length=4096, default='')
     original_title = models.CharField(max_length=4096, default='')
+    is_being_updated = models.BooleanField(default=False)
+    update_started_at = models.DateTimeField(null=True, blank=True)
+    update_generation = models.IntegerField(default=0)
+    continue_update_from = models.BigIntegerField(default=0)
 
     def __str__(self):
       return str("%d (%s)" % (self.id, self.title))
