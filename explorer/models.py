@@ -12,11 +12,11 @@ class Account(models.Model):
     id = models.AutoField(primary_key=True)
     messenger_type = models.ForeignKey(MessengerType, on_delete=models.CASCADE, default=1)
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
-    login = models.CharField(max_length=32)
+    name = models.CharField(max_length=32)
     signed_in = models.BooleanField(default=False)
 
     def __str__(self):
-      return self.login
+      return self.name
 
 class ChatType(models.Model):
     id = models.AutoField(primary_key=True)
