@@ -17,14 +17,19 @@ from telethon.tl.types import User as TelegramUser
 import json
 import pprint
 import re
+import time
 
 def login(request):
   user = authenticate(request, username=settings.DEFAULT_USER_NAME, password=settings.DEFAULT_USER_PASSWORD)
   if user is not None:
       django_login(request, user)
+      if request.GET.get('next'):
+        return redirect(request.GET.get('next'))
       return redirect("explorer:index")
 
-  return HttpResponse("ERROR: Cannot authenticate default user")
+  res = HttpResponse("ERROR: Cannot authenticate default user")
+  res['Access-Control-Allow-Origin'] = 'http://localhost:3000'
+  return res
 
 def logout(request):
   django_logout(request)

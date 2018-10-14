@@ -1,0 +1,50 @@
+.account-icon {
+  margin-left: 4px;
+  margin-right: 8px;
+  font-size: 16px;
+  min-width: 17px;
+}
+
+.account-type-picker {
+  text-align: center;
+}
+
+.account-type-picker .btn-app  {
+  height: 85px;
+  padding: 15px 10px;
+  margin: 15px 10px;
+  color: #333;
+}
+
+.account-type-picker .btn-app .fa {
+  font-size: 35px;
+  margin-bottom: 5px;
+}
+
+.account-type-picker-button {
+  font-size: 17px;
+}
+
+.add-account-form {
+  max-width: 380px;
+  padding: 15px;
+  margin: 0 auto;
+}
+
+.chat-container {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+}
+
+.chat {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right:0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+

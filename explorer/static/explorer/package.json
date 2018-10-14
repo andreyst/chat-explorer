@@ -1,10 +1,11 @@
 {
-  "name": "admin-lte",
-  "version": "2.4.2",
+  "name": "chatexplorer",
+  "version": "0.0.1",
   "main": "dist/js/adminlte.min.js",
+  "description": "Chat Explorer",
   "repository": {
-    "type": "git",
-    "url": "git://github.com/almasaeed2010/AdminLTE.git"
+     "type": "git",
+     "url": "https://github.com/andreyst/chat-explorer"
   },
   "license": "MIT",
   "devDependencies": {
