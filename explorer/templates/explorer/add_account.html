@@ -2,6 +2,7 @@
 
 {% block content-header %}Add chat account{% endblock %}
 {% block content %}
+{% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>{% endif %}
 <form class="add-account-form" action="{% url 'explorer:add_account' %}" method="post">
   {% csrf_token %}
   <input type="hidden" name="messenger_type" value="1" />
