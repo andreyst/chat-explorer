@@ -65,12 +65,12 @@ def add_account(request):
     return render(request, 'explorer/add_account.html', { 'error_message' : 'Chat login should contain only + and digits' })
 
   try:
-    account = Account.objects.get(user=request.user, login=login)
+    account = Account.objects.get(user=request.user, name=login)
   except Account.DoesNotExist:
     account = Account()
     account.messenger_type = messenger_type
     account.user = request.user
-    account.login = login
+    account.name = login
     account.save()
 
   if messenger_type.id == 1:
@@ -90,7 +90,7 @@ def add_account(request):
 @login_required
 def telegram_sign_in(request, account_id, telegram_phone_hash):
   account = get_object_or_404(Account, user=request.user, id=account_id)
-  login = account.login
+  login = account.name
   if not telegram_phone_hash:
     return redirect("explorer:add_account")
 
@@ -128,7 +128,7 @@ def telegram_sign_in(request, account_id, telegram_phone_hash):
 def list_remote_chats(request, account_id):
   account = get_object_or_404(Account, user=request.user, id=account_id)
 
-  telethon_session_path = settings.TELETHON_SESSIONS_DIR + "/" + str(request.user.id) + "_" + account.login
+  telethon_session_path = settings.TELETHON_SESSIONS_DIR + "/" + str(request.user.id) + "_" + account.name
   tl_client = TelegramClient(telethon_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
   rc = tl_client.connect()  # Must return True, otherwise, try again
   if rc is not True:
@@ -198,7 +198,7 @@ def list_remote_chats(request, account_id):
 
   context = {
     'account_id': account.id,
-    'account_login': account.login,
+    'account_login': account.name,
     'chats': chats
   }
 
@@ -245,7 +245,7 @@ def explore_chat(request, chat_id):
   with connection.cursor() as cursor:
       case = "CASE %s END AS daytime" % " ".join(['WHEN daytime = %s THEN "%s"' % (x[0], x[1]) for x in Message.DAYTIME_CHOICES])
       sql = 'SELECT date(date), %s, COUNT(*) FROM %s' % (case, Message()._meta.db_table)
-      sql += ' WHERE chat_id = %s GROUP BY date(date), daytime'
+      sql += ' WHERE chat_id = %s AND author_name not in ("Бот-менеджер", "Juggler Search") GROUP BY date(date), daytime'
       cursor.execute(sql, [chat.id])
       stats = cursor.fetchall()
   context = {
