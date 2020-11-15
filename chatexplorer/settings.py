@@ -130,6 +130,7 @@ DEFAULT_USER_PASSWORD = 'tHFCjVRg8CCktbDwF3ivorutmN'
 LOGIN_URL = '/login'
 
 CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
 INTERNAL_IPS = ['127.0.0.1']
