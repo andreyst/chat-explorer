@@ -7,17 +7,9 @@ from datetime import timedelta
 from django.conf import settings
 from django.db.models import Max
 from django.db import transaction
-from django.utils.timezone import make_aware
-from telethon import TelegramClient
-from telethon.tl.functions.messages import GetDialogsRequest
-from telethon.tl.types import InputPeerEmpty
-from telethon.tl.types import Message as TlMessage
-from telethon.tl.types import PeerUser, PeerChat, PeerChannel
-from time import sleep
-import json
-import os
-import pprint
-import sys
+from telethon.sync import TelegramClient
+from telethon.tl.types import MessageService as TlMessageService
+import asyncio
 
 logger = get_task_logger(__name__)
 
@@ -45,115 +37,95 @@ def sync_telegram_chat(chat_id, update_generation):
   logger.info("Starting update iteration of chat %s with update generation %s" % (chat_id, update_generation))
 
   try:
-    chat = Chat.objects.get(id=chat_id)
+    chat = Chat.objects.get(id=chat_id, update_generation=update_generation)
   except Chat.DoesNotExist:
-    logger.info("Channel %s does not exists" % chat_id)
+    logger.info("Channel {chat_id} with update generation {update_generation} does not exists" % chat_id)
     return False
 
-  telethon_session = settings.TELETHON_SESSIONS_DIR + "/" + str(chat.account.user_id) + "_" + str(chat.account.login)
+  telethon_session = settings.TELETHON_SESSIONS_DIR + "/" + str(chat.account.user_id) + "_" + str(chat.account.name)
   logger.debug("Telethon session: %s" % telethon_session)
 
+  loop = asyncio.new_event_loop()
+  asyncio.set_event_loop(loop)
   client = TelegramClient(telethon_session, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
-  rc = client.connect()  # Must return True, otherwise, try again
-  if not rc:
-    logger.error("Chat account %s is not connected" % chat.account.login)
-    return False
-
+  client.connect()
   if not client.is_user_authorized():
     logger.error("Chat account %s is not authorized" % chat.account.login)
     return False
 
-  # chat
-  if chat.remote_type == 1:
-    peer = PeerUser(chat.remote_id)
-  elif chat.remote_type == 2:
-    peer = PeerChat(chat.remote_id)
-  elif chat.remote_type == 3:
-    peer = PeerChannel(chat.remote_id)
-  else:
-    raise ValueError("Unknown channel type " + chat.remote_type)
+  with client.start():
+    chat_entity = client.get_entity(chat.remote_id)
 
-  chat_tl_entity = client.get_entity(peer)
-  author_ids = set()
-  author_names = {}
+    continue_update_from = chat.continue_update_from
+    if continue_update_from == 0:
+      max_remote_id = Message.objects.filter(chat_id=chat.id).aggregate(Max('remote_id'))
+      max_remote_id = max_remote_id['remote_id__max']
+      if max_remote_id is None:
+        max_remote_id = 0
+      continue_update_from = max_remote_id
+    logger.info(f"Max remote id: {continue_update_from}")
 
-  if chat.continue_update_from > 0:
-    max_remote_id = Message.objects.filter(chat_id=chat.id, remote_id__lt=chat.continue_update_from).aggregate(Max('remote_id'))
-  else:
-    max_remote_id = Message.objects.filter(chat_id=chat.id).aggregate(Max('remote_id'))
-  max_remote_id = max_remote_id['remote_id__max']
-  logger.info("Max remote id: %s" % (max_remote_id))
+    author_names = {}
+    messages = []
+    max_id = None
 
-  slice_len = 0
-  (total_messages_count, messages_slice, senders) = client.get_message_history(chat_tl_entity, limit=100, offset_id=chat.continue_update_from)
+    # for message in client.iter_messages(chat_entity, reverse=True, limit=20, min_id=max_remote_id):
+    for tl_message in client.iter_messages(chat_entity, reverse=True, limit=1000, min_id=continue_update_from):
+        max_id = tl_message.id
+        if isinstance(tl_message, TlMessageService):
+          continue
 
-  logger.info("Retrieved %d messages" % (len(messages_slice)))
+        if tl_message.from_id.user_id not in author_names:
+          author = client.get_entity(tl_message.from_id)
+          author_name = author.first_name if author.first_name is not None else ""
+          if author.last_name is not None:
+            author_name += " " + author.last_name
+          author_names[tl_message.from_id.user_id] = author_name
 
-  messages = []
-  is_max_remote_id_found = False
+        author_name = author_names[tl_message.from_id.user_id]
+        message = Message()
+        message.user = chat.user
+        message.account = chat.account
+        message.chat = chat
+        message.remote_id = tl_message.id
+        message.date = tl_message.date
+        daytime = calc_daytime(tl_message.date)
+        message.daytime = daytime
+        message.from_id = tl_message.from_id.user_id
+        message.author_name = author_name
+        message.text = tl_message.message
+        messages.append(message)
 
-  for tl_message in messages_slice:
-    if tl_message.id == max_remote_id:
-      is_max_remote_id_found = True
-      logger.info("Found message with max remote id: %s" % max_remote_id)
-      break
+    if max_id is not None:
+      logger.info(f"Last message: {tl_message}")
+      logger.info("Prepared %d messages to save" % (len(messages)))
 
-    if not isinstance(tl_message, TlMessage):
-      logger.info("Skipping non-message %s" % pprint.pformat(tl_message))
-      continue
+      with transaction.atomic():
+        sid = transaction.savepoint()
 
-    if tl_message.from_id not in author_ids:
-      author = client.get_entity(PeerUser(tl_message.from_id))
-      author_name = author.first_name
-      if author.last_name is not None:
-        author_name += " " + author.last_name
-      author_names[tl_message.from_id] = author_name
-      author_ids.add(tl_message.from_id)
+        if len(messages) > 0:
+          Message.objects.bulk_create(messages)
 
-    author_name = author_names[tl_message.from_id]
-    message = Message()
-    message.user = chat.user
-    message.account = chat.account
-    message.chat = chat
-    message.remote_id = tl_message.id
-    date = make_aware(tl_message.date)
-    message.date = date
-    daytime = calc_daytime(date)
-    message.daytime = daytime
-    message.from_id = tl_message.from_id
-    message.author_name = author_name
-    message.text = tl_message.message
-    messages.append(message)
+        affected_rows = Chat.objects.filter(id=chat.id, update_generation=update_generation).update(
+          continue_update_from=max_id
+        )
 
-  logger.info("Prepared %d messages to save" % (len(messages)))
+        if affected_rows != 1:
+          transaction.savepoint_rollback(sid)
+          logger.warn("Failed to save %d messages because chat have changed its update generation from %s" % (len(messages), update_generation))
+          return False
 
-  if len(messages) > 0:
-    with transaction.atomic():
-      sid = transaction.savepoint()
+        transaction.savepoint_commit(sid)
+        logger.info("Saved %d messages" % (len(messages)))
+        logger.info(f"Scheduling next batch retrieval from id={max_id}")
+        sync_telegram_chat.delay(chat.id, chat.update_generation)
+    else:
+      logger.info("Update fully completed")
+      chat.is_being_updated = False
+      chat.continue_update_from = 0
+      chat.save()
 
-      Message.objects.bulk_create(messages)
-      affected_rows = Chat.objects.filter(id=chat.id, update_generation=update_generation).update(
-        continue_update_from=messages[-1].remote_id
-      )
-
-      if affected_rows != 1:
-        transaction.savepoint_rollback(sid)
-        logger.warn("Failed to save %d messages because chat have changed its update generation from %s" % (len(messages), update_generation))
-        return False
-
-      transaction.savepoint_commit(sid)
-      logger.info("Saved %d messages" % (len(messages)))
-
-  if is_max_remote_id_found or len(messages_slice) == 0:
-    logger.info("Update fully completed, is_max_remote_id_found=%s, len(messages_slice)=%s" % (is_max_remote_id_found, len(messages_slice)))
-    chat.is_being_updated = False
-    chat.continue_update_from = 0
-    chat.save()
-  else:
-    logger.info("Scheduling next batch retrieval from id=%s" % (chat.continue_update_from))
-    sync_telegram_chat.delay(chat.id, update_generation)
-
-  logger.info("Finished update iteration of chat %s with update generation %s" % (chat_id, update_generation))
+    logger.info(f"Finished update iteration of chat {chat.id} with update generation {chat.update_generation}")
 
   return True
 
