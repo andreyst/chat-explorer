@@ -9,7 +9,7 @@ from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render, redirect
-from telethon import TelegramClient
+from telethon.sync import TelegramClient
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty
 from telethon.tl.types import PeerUser, PeerChat, PeerChannel
@@ -17,6 +17,7 @@ from telethon.tl.types import User as TelegramUser
 import json
 import pprint
 import re
+import asyncio
 
 def login(request):
   user = authenticate(request, username=settings.DEFAULT_USER_NAME, password=settings.DEFAULT_USER_PASSWORD)
@@ -56,13 +57,18 @@ def add_account(request):
   try:
     messenger_type = get_object_or_404(MessengerType, id=request.POST.get('messenger_type'))
   except MessengerType.DoesNotExist:
-    return render(request, 'explorer/add_account.html', { 'error_message' : 'Missing chat type' })
+    return render(request, 'explorer/add_account.html', { 'error_message' : 'Missing account type' })
 
   login = request.POST.get('login');
   if login is None or len(login) < 1:
-    return render(request, 'explorer/add_account.html', { 'error_message' : 'Chat login should not be empty' })
-  if not re.match(r"^\+\d+$", login):
-    return render(request, 'explorer/add_account.html', { 'error_message' : 'Chat login should contain only + and digits' })
+    return render(request, 'explorer/add_account.html', { 'error_message' : 'Account login should not be empty' })
+
+  if messenger_type.id == 1:
+    if not re.match(r"^\+\d+$", login):
+      return render(request, 'explorer/add_account.html', { 'error_message' : 'Account login should contain only + and digits' })
+  elif messenger_type.id == 2:
+    if not re.match(r"^id\d+$", login):
+      return render(request, 'explorer/add_account.html', { 'error_message' : 'Account login should be in format id\\d+' })
 
   try:
     account = Account.objects.get(user=request.user, name=login)
@@ -74,13 +80,20 @@ def add_account(request):
     account.save()
 
   if messenger_type.id == 1:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     tl_client = TelegramClient(settings.TELETHON_SESSIONS_DIR + "/" + str(request.user.id) + "_" + login, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
-    rc = tl_client.connect()  # Must return True, otherwise, try again
+    tl_client.connect()  # Must return True, otherwise, try again
 
-    if not tl_client.is_user_authorized():
-      sent_code = tl_client.send_code_request(login)
-      return redirect("explorer:telegram_sign_in", account_id=account.id, telegram_phone_hash=sent_code.phone_code_hash)
+    with tl_client:
+      if not tl_client.is_user_authorized():
+        sent_code = tl_client.send_code_request(login)
+        return redirect("explorer:telegram_sign_in", account_id=account.id, telegram_phone_hash=sent_code.phone_code_hash)
 
+      account.signed_in = True
+      account.save()
+      return redirect("explorer:index")
+  elif messenger_type.id == 2:
     account.signed_in = True
     account.save()
     return redirect("explorer:index")
@@ -127,74 +140,76 @@ def telegram_sign_in(request, account_id, telegram_phone_hash):
 @login_required
 def list_remote_chats(request, account_id):
   account = get_object_or_404(Account, user=request.user, id=account_id)
-
-  telethon_session_path = settings.TELETHON_SESSIONS_DIR + "/" + str(request.user.id) + "_" + account.name
-  tl_client = TelegramClient(telethon_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
-  rc = tl_client.connect()  # Must return True, otherwise, try again
-  if rc is not True:
-    redirect("explorer:add_account")
-
-  result = ""
-  xstr = lambda s: s or ""
   chats = []
 
-  limit = 5
-  offset_date = None
+  if account.messenger_type.id == 1:
+    telethon_session_path = settings.TELETHON_SESSIONS_DIR + "/" + str(request.user.id) + "_" + account.name
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    tl_client = TelegramClient(telethon_session_path, settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+    tl_client.connect()
+    if not tl_client.is_user_authorized():
+      return redirect("explorer:add_account")
 
-  while limit > 0:
-    limit -= 1
-    result = tl_client(GetDialogsRequest(
-                                        offset_date=offset_date,
-                                        offset_id=0,
-                                        offset_peer = InputPeerEmpty(),
-                                        limit=10
-                                      ))
+    with tl_client:
+      result = ""
+      xstr = lambda s: s or ""
 
-    for dialog in result.dialogs:
-      if isinstance(dialog.peer, PeerUser):
-        user = tl_client.get_entity(PeerUser(dialog.peer.user_id))
-        title = xstr(user.first_name) + " " + xstr(user.last_name)
-        chat = {
-          'title': title,
-          'type_str': "User",
-          'remote_id': dialog.peer.user_id,
-          'remote_type': 1,
-          'original_title': title,
-        }
-      elif isinstance(dialog.peer, PeerChat):
-        chat = tl_client.get_entity(PeerChat(dialog.peer.chat_id))
-        title = chat.title
-        chat = {
-          'title': title,
-          'type_str': "Chat",
-          'remote_id': dialog.peer.chat_id,
-          'remote_type': 2,
-          'original_title': title,
-        }
-      elif isinstance(dialog.peer, PeerChannel):
-        channel = tl_client.get_entity(PeerChannel(dialog.peer.channel_id))
-        title = channel.title
-        chat = {
-          'title': title,
-          'type_str': "Channel",
-          'remote_id': dialog.peer.channel_id,
-          'remote_type': 3,
-          'original_title': title,
-        }
-      else:
-        title = "Unknown type:" + pprint.pformat(dialog.peer)
-        chat = {
-          'title': title,
-          'remote_id': 0,
-          'original_title': title,
-        }
+      limit = 5
+      offset_date = None
 
-      chats.append(chat)
+      for dialog in tl_client.iter_dialogs():
+        print(dialog.id)
 
-    if not result.messages:
-        break
+        if dialog.is_user:
+          user = dialog.entity
+          title = xstr(user.first_name) + " " + xstr(user.last_name)
+          chat = {
+            'title': title,
+            'type_str': "User",
+            'remote_id': user.id,
+            'remote_type': 1,
+            'original_title': title,
+          }
+        elif dialog.is_group:
+          chat = dialog.entity
+          title = chat.title
+          chat = {
+            'title': title,
+            'type_str': "Chat",
+            'remote_id': chat.id,
+            'remote_type': 2,
+            'original_title': title,
+          }
+        elif dialog.is_channel:
+          channel = dialog.entity
+          title = channel.title
+          chat = {
+            'title': title,
+            'type_str': "Channel",
+            'remote_id': channel.id,
+            'remote_type': 3,
+            'original_title': title,
+          }
+        else:
+          title = "Unknown type:" + pprint.pformat(dialog.entity)
+          chat = {
+            'title': title,
+            'remote_id': 0,
+            'original_title': title,
+          }
 
-    offset_date = min(msg.date for msg in result.messages)
+        chats.append(chat)
+  elif account.messenger_type.id == 2:
+          chats.append({
+            'title': 'AAA',
+            'type_str': "Chat",
+            'remote_id': 1000,
+            'remote_type': 2,
+            'original_title': 'AAA',
+          })
+  else:
+    return render(request, 'explorer/list_remote_chats.html', { 'error_message' : 'Unsupported messenger type' })
 
   context = {
     'account_id': account.id,
@@ -236,7 +251,7 @@ def import_remote_chat(request, account_id, remote_id, remote_type):
 
   sync_telegram_chat.delay(chat.id, new_update_generation)
 
-  return redirect('explorer:index');
+  return redirect('explorer:index')
 
 @login_required
 def explore_chat(request, chat_id):
