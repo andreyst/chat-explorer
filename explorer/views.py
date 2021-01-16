@@ -159,8 +159,6 @@ def list_remote_chats(request, account_id):
       offset_date = None
 
       for dialog in tl_client.iter_dialogs():
-        print(dialog.id)
-
         if dialog.is_user:
           user = dialog.entity
           title = xstr(user.first_name) + " " + xstr(user.last_name)
