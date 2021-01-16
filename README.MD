@@ -9,7 +9,7 @@ Current version allows you to download your chat and build a heatmap of messages
 1. Clone this repo from github
 2. Install necessary python libraries:
 ```
-pip3 install Django==1.11.6 telethon redis celery django-celery-results "celery[redis]" pytz tzlocal django-debug-toolbar
+pip3 install Django telethon redis celery django-celery-results "celery[redis]" pytz tzlocal django-debug-toolbar
 ```
 3. Copy settings
 ```
