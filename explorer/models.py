@@ -64,6 +64,7 @@ class Message(models.Model):
       default=0)
     from_id = models.BigIntegerField(default=0)
     author_name = models.CharField(max_length=4096, default='')
+    author_username = models.CharField(max_length=4096, default='')
     text = models.CharField(max_length=4096)
 
     def __str__(self):

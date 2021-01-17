@@ -66,6 +66,7 @@ def sync_telegram_chat(chat_id, update_generation):
     logger.info(f"Max remote id: {continue_update_from}")
 
     author_names = {}
+    author_usernames = {}
     messages = []
     max_id = None
 
@@ -75,14 +76,18 @@ def sync_telegram_chat(chat_id, update_generation):
         if isinstance(tl_message, TlMessageService):
           continue
 
-        if tl_message.from_id.user_id not in author_names:
+        author_id = tl_message.from_id.user_id
+
+        if author_id not in author_names:
           author = client.get_entity(tl_message.from_id)
           author_name = author.first_name if author.first_name is not None else ""
           if author.last_name is not None:
             author_name += " " + author.last_name
-          author_names[tl_message.from_id.user_id] = author_name
+          author_names[author_id] = author_name
 
-        author_name = author_names[tl_message.from_id.user_id]
+          author_usernames[author_id] = author.username if author.username is not None else ""
+
+        author_name = author_names[author_id]
         message = Message()
         message.user = chat.user
         message.account = chat.account
@@ -91,8 +96,9 @@ def sync_telegram_chat(chat_id, update_generation):
         message.date = tl_message.date
         daytime = calc_daytime(tl_message.date)
         message.daytime = daytime
-        message.from_id = tl_message.from_id.user_id
+        message.from_id = author_id
         message.author_name = author_name
+        message.author_username = author_usernames[author_id]
         message.text = tl_message.message
         messages.append(message)
 
