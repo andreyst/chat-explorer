@@ -5,16 +5,13 @@
 {% block container-style %}container-fluid{% endblock %}
 
 {% block additional-styles %}
-      .content {
-      padding-bottom: 0;
-    }
     .box-content {
     margin-bottom: 0;
   }
     .box-body-content {
     padding-bottom: 0;
   }
-      #chart{
+      #heatmap{
         width: 800px;
         margin: 0 auto;
       }
@@ -72,286 +69,407 @@
         word-wrap:break-word;
         margin-left: 0;
     }
+
+  #messages-stats {
+    height: 300px;
+  }
+  #authors-stats {
+    height: 300px
+  }
 {% endblock %}
 
 {% block content-header %}Chat "{{ chat.title }} (#{{ chat.id }})"{% endblock %}
 {% block content %}
 <div class="row">
   <div class="col-md-4" id="chat-container-col">
-    <div class="chat-container" id="chat-container">
-    <div class="chat" id="chat">
+    <div class="box box-default box-content">
+      <div class="box-body box-body-content">
+        <div class="chat-container" id="chat-container">
+        <div class="chat" id="chat">
 
-    {% if not chat_messages %}
-      Chat does not have any messages.
-    {% else %}
-      {% for message in chat_messages %}
-      {% ifchanged %}
-      <a id="{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d"}}" href="#{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }}"></a>
-      <div class="badge bg-aqua">{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }}</div>
-      {% endifchanged %}
-        <!-- Message. Default to the left -->
-        <div class="direct-chat-msg">
-          <div class="direct-chat-info clearfix">
-            <span class="direct-chat-name pull-left">{{ message.author_name }}</span>
-            <span class="direct-chat-timestamp pull-right">{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d H:i:s" }}</span>
-          </div>
-          <div class="direct-chat-text">{{ message.text }}</div>
-          <!-- /.direct-chat-text -->
+        {% if not chat_messages %}
+          Chat does not have any messages.
+        {% else %}
+          {% for message in chat_messages %}
+          {% ifchanged %}
+          <a id="{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d"}}" href="#{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }}"></a>
+          <div class="badge bg-aqua">{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d" }}</div>
+          {% endifchanged %}
+            <div class="direct-chat-msg">
+              <div class="direct-chat-info clearfix">
+                <span class="direct-chat-name pull-left">{{ message.author_name }}</span>
+                <span class="direct-chat-timestamp pull-right">{{ message.date|timezone:"Europe/Moscow"|date:"Y-m-d H:i:s" }}</span>
+              </div>
+              <div class="direct-chat-text">{{ message.text }}</div>
+            </div>
+          {% endfor %}
+        {% endif %}
         </div>
-        <!-- /.direct-chat-msg -->
-      {% endfor %}
-    {% endif %}
-    </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="col-md-8">
-     <div id="chart" class="clearfix"></div>
+    <div class="nav-tabs-custom">
+      <ul class="nav nav-tabs">
+        <li class="active"><a href="#tab_1" data-toggle="tab" aria-expanded="true">Statistics</a></li>
+        <li class=""><a href="#tab_2" data-toggle="tab" aria-expanded="false">Authors</a></li>
+        <li class=""><a href="#tab_3" data-toggle="tab" aria-expanded="false">Questions</a></li>
+        <li class=""><a href="#tab_4" data-toggle="tab" aria-expanded="false">Heatmap</a></li>
+<!--
+        <li class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            Dropdown <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Action</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Another action</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Something else here</a></li>
+            <li role="presentation" class="divider"></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Separated link</a></li>
+          </ul>
+        </li>
+        <li class="pull-right"><a href="#" class="text-muted"><i class="fa fa-gear"></i></a></li>
+ -->
+        </ul>
+      <div class="tab-content">
+        <div class="tab-pane active" id="tab_1">
+          <div class="btn-group pull-right">
+            <button type="button" class="btn btn-default btn-sm active">D</button>
+            <button type="button" class="btn btn-default btn-sm">W</button>
+            <button type="button" class="btn btn-default btn-sm">M</button>
+          </div>
+          <div id="messages-stats"></div>
+          <div id="authors-stats"></div>
+        </div>
+        <!-- /.tab-pane -->
+        <div class="tab-pane" id="tab_2">
+          <table class="table">
+            <tbody><tr>
+              <th>Username</th>
+              <th>Name</th>
+              <th>Messages</th>
+              <th>Days seen</th>
+              <th>Role</th>
+            </tr>
+            {% for author in authors %}
+            <tr>
+              <td>@{{ author.username }}</td>
+              <td>{{ author.name }}</td>
+              <td>{{ author.messages }}</td>
+              <td>{{ author.days_seen }}</td>
+              <td>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-default">Admin</button>
+                  <button type="button" class="btn btn-default">User</button>
+                  <button type="button" class="btn btn-default">Bot</button>
+                  <button type="button" class="btn btn-default active">None</button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody></table>
+        </div>
+        <!-- /.tab-pane -->
+        <div class="tab-pane" id="tab_3">
+        </div>
+        <!-- /.tab-pane -->
+        <div class="tab-pane" id="tab_4">
+          <div id="heatmap" class="clearfix"></div>
+        </div>
+        <!-- /.tab-pane -->
+      </div>
+      <!-- /.tab-content -->
+    </div>
   </div>
 </div>
+<script src="http://d3js.org/d3.v3.js"></script>
+<script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+<script>
+var resizeChatContainer = function() {
+  $("#chat-container").height(($(window).innerHeight() - $("#chat-container").offset().top) + "px");
+};
+$(window).resize(resizeChatContainer);
+resizeChatContainer();
+$('#chat').scrollTop($('#chat')[0].scrollHeight);
+</script>
+<script>
+  var stats = {{ stats|safe }};
+  var messages_stats = stats.map(el => [Date.parse(el[0]), el[1]])
+  var authors_stats = stats.map(el => [Date.parse(el[0]), el[2]])
 
-  <script src="http://d3js.org/d3.v3.js"></script>
-  <script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
-  <script>
-  var resizeChatContainer = function() {
-    $("#chat-container").height(($(window).innerHeight() - $("#chat-container").offset().top) + "px");
-  };
-  $(window).resize(resizeChatContainer);
-  resizeChatContainer();
-  $('#chat').scrollTop($('#chat')[0].scrollHeight);
-  </script>
-  <script>
+  // MESSAGE STATS
+  Highcharts.chart('messages-stats', {
+      title: {
+          text: 'Messages'
+      },
+      xAxis: {
+          type: "datetime",
+          labels: {
+            formatter: function() {
+              return Highcharts.dateFormat('%Y/%m/%d', this.value);
+            }
+          },
+      },
+      series: [{
+          name: 'Messages',
+          data: messages_stats
+      }],
+  });
 
-    var width = 960,
-        height = 750,
-        cellSize = 25; // cell size
+  // AUTHORS STATS
+  Highcharts.chart('authors-stats', {
+      title: {
+          text: 'Authors'
+      },
+      xAxis: {
+          type: "datetime",
+          labels: {
+            formatter: function() {
+              return Highcharts.dateFormat('%Y/%m/%d', this.value);
+            }
+          },
+      },
+      series: [{
+          name: 'Authors',
+          data: authors_stats
+      }],
+  });
 
-    var no_months_in_a_row = Math.floor(width / (cellSize * 7 + 50));
-    var shift_up = cellSize * 3;
 
-    var day = d3.time.format("%w"), // day of the week
-        day_of_month = d3.time.format("%e") // day of the month
-        day_of_year = d3.time.format("%j")
-        week = d3.time.format("%W"), // week number of the year
-        month = d3.time.format("%m"), // month number
-        year = d3.time.format("%Y"),
-        percent = d3.format(".1%"),
-        format = d3.time.format("%Y-%m-%d");
+  // HEATMAP
 
-    // var color = d3.map(function(d) { console.log(d); } );
-    // var color = d3.scale.quantize()
-    //     .domain([-.05, .05])
-    //     .range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
+  var width = 960,
+      height = 750,
+      cellSize = 25; // cell size
 
-    var svg = d3.select("#chart").selectAll("svg")
-        .data(d3.range(2017, 2021))
-      .enter().append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("class", "RdYlGn")
-      .append("g")
+  var no_months_in_a_row = Math.floor(width / (cellSize * 7 + 50));
+  var shift_up = cellSize * 3;
 
-    // var rect = svg.selectAll(".day")
-    var gr = svg.selectAll(".day")
-        .data(function(d) {
-          return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1));
-        })
-      .enter().append("g")
-        .attr("transform", function(d, i) { return "translate(0,0)"; })
-        // .attr("class", "day")
-        .attr("width", cellSize)
-        .attr("height", cellSize);
-        // .attr("x", function(d) {
-        //   var month_padding = 1.2 * cellSize*7 * ((month(d)-1) % (no_months_in_a_row));
-        //   return day(d) * cellSize + month_padding;
-        // })
-        // .attr("y", function(d) {
-        //   var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
-        //   var row_level = Math.ceil(month(d) / (no_months_in_a_row));
-        //   return (week_diff*cellSize) + row_level*cellSize*8 - cellSize/2 - shift_up;
-        // })
-        // .datum(format);
+  var day = d3.time.format("%w"), // day of the week
+      day_of_month = d3.time.format("%e") // day of the month
+      day_of_year = d3.time.format("%j")
+      week = d3.time.format("%W"), // week number of the year
+      month = d3.time.format("%m"), // month number
+      year = d3.time.format("%Y"),
+      percent = d3.format(".1%"),
+      format = d3.time.format("%Y-%m-%d");
 
-    var rect = gr.append("rect")
-        .attr("class", "day good")
-        .attr("width", cellSize)
-        .attr("height", cellSize)
-        .attr("x", function(d) {
-          var month_padding = 1.2 * cellSize*7 * ((month(d)-1) % (no_months_in_a_row));
-          var dayNum = day(d) - 1;
-          if (dayNum === -1) dayNum = 6;
-          return dayNum * cellSize + month_padding;
-        })
-        .attr("y", function(d) {
-          var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
-          var row_level = Math.ceil(month(d) / (no_months_in_a_row));
-          return (week_diff*cellSize) + row_level*cellSize*8 - cellSize/2 - shift_up;
-        })
-        .datum(format);
+  // var color = d3.map(function(d) { console.log(d); } );
+  // var color = d3.scale.quantize()
+  //     .domain([-.05, .05])
+  //     .range(d3.range(11).map(function(d) { return "q" + d + "-11"; }));
 
-    var texts = gr.append("text")
+  var svg = d3.select("#heatmap").selectAll("svg")
+      .data(d3.range(2017, new Date().getFullYear() + 1))
+    .enter().append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("class", "RdYlGn")
+    .append("g")
+
+  // var rect = svg.selectAll(".day")
+  var gr = svg.selectAll(".day")
+      .data(function(d) {
+        return d3.time.days(new Date(d, 0, 1), new Date(d + 1, 0, 1));
+      })
+    .enter().append("g")
+      .attr("transform", function(d, i) { return "translate(0,0)"; })
+      // .attr("class", "day")
+      .attr("width", cellSize)
+      .attr("height", cellSize);
+      // .attr("x", function(d) {
+      //   var month_padding = 1.2 * cellSize*7 * ((month(d)-1) % (no_months_in_a_row));
+      //   return day(d) * cellSize + month_padding;
+      // })
+      // .attr("y", function(d) {
+      //   var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
+      //   var row_level = Math.ceil(month(d) / (no_months_in_a_row));
+      //   return (week_diff*cellSize) + row_level*cellSize*8 - cellSize/2 - shift_up;
+      // })
+      // .datum(format);
+
+  var rect = gr.append("rect")
+      .attr("class", "day good")
       .attr("width", cellSize)
       .attr("height", cellSize)
-      .style("font-size", "0.7em")
       .attr("x", function(d) {
         var month_padding = 1.2 * cellSize*7 * ((month(d)-1) % (no_months_in_a_row));
         var dayNum = day(d) - 1;
         if (dayNum === -1) dayNum = 6;
-        return dayNum * cellSize + cellSize / 2 + month_padding;
+        return dayNum * cellSize + month_padding;
       })
       .attr("y", function(d) {
         var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
         var row_level = Math.ceil(month(d) / (no_months_in_a_row));
-        return (week_diff*cellSize+cellSize/2 + 1) + row_level*cellSize*8 - cellSize/2 - shift_up;
+        return (week_diff*cellSize) + row_level*cellSize*8 - cellSize/2 - shift_up;
       })
-      .attr("text-anchor", "middle")
-      .attr("alignment-baseline", "middle")
-      .text("0")
       .datum(format);
 
-    var month_titles = svg.selectAll(".month-title")  // Jan, Feb, Mar and the whatnot
-          .data(function(d) {
-            return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-        .enter().append("text")
-          .text(monthTitle)
-          .attr("x", function(d, i) {
-            var month_padding = 1.2 * cellSize*7* ((month(d)-1) % (no_months_in_a_row));
-            return month_padding;
-          })
-          .attr("y", function(d, i) {
-            var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
-            var row_level = Math.ceil(month(d) / (no_months_in_a_row));
-            return (week_diff*cellSize) + row_level*cellSize*8 - cellSize - shift_up;
-          })
-          .attr("class", "month-title")
-          .attr("d", monthTitle);
+  var texts = gr.append("text")
+    .attr("width", cellSize)
+    .attr("height", cellSize)
+    .style("font-size", "0.7em")
+    .attr("x", function(d) {
+      var month_padding = 1.2 * cellSize*7 * ((month(d)-1) % (no_months_in_a_row));
+      var dayNum = day(d) - 1;
+      if (dayNum === -1) dayNum = 6;
+      return dayNum * cellSize + cellSize / 2 + month_padding;
+    })
+    .attr("y", function(d) {
+      var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
+      var row_level = Math.ceil(month(d) / (no_months_in_a_row));
+      return (week_diff*cellSize+cellSize/2 + 1) + row_level*cellSize*8 - cellSize/2 - shift_up;
+    })
+    .attr("text-anchor", "middle")
+    .attr("alignment-baseline", "middle")
+    .text("0")
+    .datum(format);
 
-    var year_titles = svg.selectAll(".year-title")  // Jan, Feb, Mar and the whatnot
-          .data(function(d) {
-            return d3.time.years(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
-        .enter().append("text")
-          .text(yearTitle)
-          .attr("x", function(d, i) { return width/2 - 100; })
-          .attr("y", function(d, i) { return cellSize*5.5 - shift_up; })
-          .attr("class", "year-title")
-          .attr("d", yearTitle);
-
-
-    //  Tooltip Object
-    var tooltip = d3.select("body")
-      .append("div").attr("id", "tooltip")
-      .style("position", "absolute")
-      .style("z-index", "10")
-      .style("visibility", "hidden")
-      .style("display", "none")
-      .text("a simple tooltip");
-
-    // d3.csv("stats.csv?" + Math.floor(Math.random() * 1000), function(error, csv) {
-      var arr = {{ stats|safe }};
-      var data = d3.nest()
-        .key(function(d) { return d[0]; })
-        .rollup(function(d) {
-          return d.reduce(function(prev, curr) {
-            prev[curr[1]] = curr[2];
-            return prev;
-          }, {'Morning': 0, 'Day': 0, 'Evening': 0, 'Night': 0});
+  var month_titles = svg.selectAll(".month-title")  // Jan, Feb, Mar and the whatnot
+        .data(function(d) {
+          return d3.time.months(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+      .enter().append("text")
+        .text(monthTitle)
+        .attr("x", function(d, i) {
+          var month_padding = 1.2 * cellSize*7* ((month(d)-1) % (no_months_in_a_row));
+          return month_padding;
         })
-        .map(arr);
+        .attr("y", function(d, i) {
+          var week_diff = week(d) - week(new Date(year(d), month(d)-1, 1) );
+          var row_level = Math.ceil(month(d) / (no_months_in_a_row));
+          return (week_diff*cellSize) + row_level*cellSize*8 - cellSize - shift_up;
+        })
+        .attr("class", "month-title")
+        .attr("d", monthTitle);
 
-      function dayMessagesCount(dayMessagesCounts) {
-        return dayMessagesCounts.Morning + dayMessagesCounts.Day + dayMessagesCounts.Evening + dayMessagesCounts.Night;
-      }
+  var year_titles = svg.selectAll(".year-title")
+        .data(function(d) {
+          return d3.time.years(new Date(d, 0, 1), new Date(d + 1, 0, 1)); })
+      .enter().append("text")
+        .text(yearTitle)
+        .attr("x", function(d, i) { return width/2 - 100; })
+        .attr("y", function(d, i) { return cellSize*5.5 - shift_up; })
+        .attr("class", "year-title")
+        .attr("d", yearTitle);
 
-      var calcDayData = function(date, day) {
-        dayNum = new Date(Date.parse(date)).getDay();
-        count = dayMessagesCount(day)
-        text = count.toString()
-        color = "good";
-        if (dayNum === 0 || dayNum === 6) {
-          if (count > 5) {
-            color = "bad";
-          } else {
-            color = "ok";
-          }
-          text = count;
-        } else if (day.Night > 5) {
+
+  //  Tooltip Object
+  var tooltip = d3.select("body")
+    .append("div").attr("id", "tooltip")
+    .style("position", "absolute")
+    .style("z-index", "10")
+    .style("visibility", "hidden")
+    .style("display", "none")
+    .text("a simple tooltip");
+
+  // d3.csv("stats.csv?" + Math.floor(Math.random() * 1000), function(error, csv) {
+    var arr = {{ heatmap_stats|safe }};
+    var data = d3.nest()
+      .key(function(d) { return d[0]; })
+      .rollup(function(d) {
+        return d.reduce(function(prev, curr) {
+          prev[curr[1]] = curr[2];
+          return prev;
+        }, {'Morning': 0, 'Day': 0, 'Evening': 0, 'Night': 0});
+      })
+      .map(arr);
+
+    function dayMessagesCount(dayMessagesCounts) {
+      return dayMessagesCounts.Morning + dayMessagesCounts.Day + dayMessagesCounts.Evening + dayMessagesCounts.Night;
+    }
+
+    var calcDayData = function(date, day) {
+      dayNum = new Date(Date.parse(date)).getDay();
+      count = dayMessagesCount(day)
+      text = count.toString()
+      color = "good";
+      if (dayNum === 0 || dayNum === 6) {
+        if (count > 5) {
           color = "bad";
-          text = "(" + day.Night.toString() + ")";
-        } else if (day.Night > 0 || day.Evening > 2) {
+        } else {
           color = "ok";
-          text = "(" + (day.Night + day.Evening).toString() + ")";
         }
-
-        return { 'color': color, 'text': text };
+        text = count;
+      } else if (day.Night > 5) {
+        color = "bad";
+        text = "(" + day.Night.toString() + ")";
+      } else if (day.Night > 0 || day.Evening > 2) {
+        color = "ok";
+        text = "(" + (day.Night + day.Evening).toString() + ")";
       }
 
-      rect.filter(function(d) { return d in data; })
-          .attr("class", function(d) {
-            dayData = calcDayData(d, data[d]);
-            return "day " + dayData.color;
-          });
-        // .select("title")
-          // .text(function(d) { return d + ": " + data[d].Night; });
+      return { 'color': color, 'text': text };
+    }
 
-      texts.filter(function(d) { return d in data; })
-        .text(function(d) {
-          // console.log(d);/
+    rect.filter(function(d) { return d in data; })
+        .attr("class", function(d) {
           dayData = calcDayData(d, data[d]);
-          return dayData.text;
+          return "day " + dayData.color;
         });
+      // .select("title")
+        // .text(function(d) { return d + ": " + data[d].Night; });
 
-      //  Tooltip
-      rect.on("click", click);
-      rect.on("mouseover", mouseover);
-      rect.on("mouseout", mouseout);
-      texts.on("click", click);
-      texts.on("mouseover", mouseover);
-      texts.on("mouseout", mouseout);
-      function click(d) {
-        var $container = $('#chat'),
-            $scrollTo = $('#' + d);
+    texts.filter(function(d) { return d in data; })
+      .text(function(d) {
+        // console.log(d);/
+        dayData = calcDayData(d, data[d]);
+        return dayData.text;
+      });
 
-        $container.animate({
-            scrollTop: $scrollTo.offset().top - $container.offset().top + $container.scrollTop()
-        });
-      }
-      function mouseover(d) {
-        // console.log(d, data[d]);
-        tooltip.style("visibility", "visible");
-        tooltip.style("display", "block");
-        tooltip_text = d + ": No data";
-        if (data[d] !== undefined) {
-          var tooltip_text = d + "<br>" +
-            "Morning: " + data[d].Morning + "<br/>" +
-            "Day: " + data[d].Day + "<br/>" +
-            "Evening: " + data[d].Evening + "<br/>" +
-            "Night: " + data[d].Night;
-        }
-        // var percent_data = (data[d] !== undefined) ? data[d].Night : "nil";
-        tooltip.transition()
-                    .duration(200)
-                    .style("opacity", .9);
-        tooltip.html(tooltip_text)
-                    .style("left", (d3.event.pageX)+30 + "px")
-                    .style("top", (d3.event.pageY) + "px");
-      }
-      function mouseout (d) {
-        tooltip.transition()
-                .duration(500)
-                .style("opacity", 0);
-        var $tooltip = $("#tooltip");
-        $tooltip.empty();
-      }
+    //  Tooltip
+    rect.on("click", click);
+    rect.on("mouseover", mouseover);
+    rect.on("mouseout", mouseout);
+    texts.on("click", click);
+    texts.on("mouseover", mouseover);
+    texts.on("mouseout", mouseout);
+    function click(d) {
+      var $container = $('#chat'),
+          $scrollTo = $('#' + d);
 
-    // });
-
-    function dayTitle (t0) {
-      return t0.toString().split(" ")[2];
+      $container.animate({
+          scrollTop: $scrollTo.offset().top - $container.offset().top + $container.scrollTop()
+      });
     }
-    function monthTitle (t0) {
-      return t0.toLocaleString("en-us", { month: "long" });
+    function mouseover(d) {
+      // console.log(d, data[d]);
+      tooltip.style("visibility", "visible");
+      tooltip.style("display", "block");
+      tooltip_text = d + ": No data";
+      if (data[d] !== undefined) {
+        var tooltip_text = d + "<br>" +
+          "Morning: " + data[d].Morning + "<br/>" +
+          "Day: " + data[d].Day + "<br/>" +
+          "Evening: " + data[d].Evening + "<br/>" +
+          "Night: " + data[d].Night;
+      }
+      // var percent_data = (data[d] !== undefined) ? data[d].Night : "nil";
+      tooltip.transition()
+                  .duration(200)
+                  .style("opacity", .9);
+      tooltip.html(tooltip_text)
+                  .style("left", (d3.event.pageX)+30 + "px")
+                  .style("top", (d3.event.pageY) + "px");
     }
-    function yearTitle (t0) {
-      return t0.toString().split(" ")[3];
+    function mouseout (d) {
+      tooltip.transition()
+              .duration(500)
+              .style("opacity", 0);
+      var $tooltip = $("#tooltip");
+      $tooltip.empty();
     }
-  </script>
+
+  // });
+
+  function dayTitle (t0) {
+    return t0.toString().split(" ")[2];
+  }
+  function monthTitle (t0) {
+    return t0.toLocaleString("en-us", { month: "long" });
+  }
+  function yearTitle (t0) {
+    return t0.toString().split(" ")[3];
+  }
+</script>
 {% endblock %}

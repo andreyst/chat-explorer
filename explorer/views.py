@@ -1,6 +1,7 @@
 from .models import MessengerType, Account, ChatType, Chat, Message
 from .tasks import sync_telegram_chat
 from datetime import datetime
+from datetime import timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
@@ -245,7 +246,7 @@ def import_remote_chat(request, account_id, remote_id, remote_type):
   )
 
   if affected_rows != 1:
-    raise RuntimeError("Cannot initiate update of chat, somebody else has already updated it, please try again")
+    raise RuntimeError("Cannot initiate update of chat, somebody else is already updating it, please try again")
 
   sync_telegram_chat.delay(chat.id, new_update_generation)
 
@@ -254,17 +255,89 @@ def import_remote_chat(request, account_id, remote_id, remote_type):
 @login_required
 def explore_chat(request, chat_id):
   chat = get_object_or_404(Chat, id=chat_id, user=request.user)
-  messages = Message.objects.filter(chat_id=chat.id).all()
+  # messages = Message.objects.filter(chat_id=chat.id).all()
+  messages = None
+
+  with connection.cursor() as cursor:
+      sql = f"""
+          SELECT
+              date(date) AS day,
+              COUNT(*) AS messages_count,
+              COUNT(DISTINCT(author_username)) AS authors_count
+          FROM {Message()._meta.db_table}
+          WHERE
+              chat_id = %s
+          GROUP BY day
+          ORDER BY day ASC
+      """
+      cursor.execute(sql, [chat.id])
+      # stats = cursor.fetchall()
+      sparse_message_stats = cursor.fetchall()
+
+      stats = []
+
+      date_cursor = None
+      for entry in sparse_message_stats:
+        date = datetime.strptime(entry[0], "%Y-%m-%d")
+
+        if date_cursor is None:
+          date_cursor = date
+        else:
+          while date_cursor < date:
+            stats.append( (date_cursor.strftime("%Y-%m-%d"), 0, 0) )
+            date_cursor += timedelta(days=1)
+
+        stats.append(entry)
+        date_cursor += timedelta(days=1)
+
+      today = datetime.now()
+      while date_cursor <= today:
+        stats.append( (date_cursor.strftime("%Y-%m-%d"), 0, 0) )
+        date_cursor += timedelta(days=1)
+
+  with connection.cursor() as cursor:
+      sql = f"""
+          SELECT
+            authors.name AS name,
+            authors.username AS username,
+            authors.messages AS messages,
+            days_seen.days_seen AS days_seen
+          FROM (
+            SELECT
+                author_name AS name,
+                author_username AS username,
+                COUNT(*) AS messages
+            FROM {Message()._meta.db_table}
+            WHERE chat_id = %s
+            GROUP BY author_username
+            ORDER BY messages DESC
+          ) AS authors
+          LEFT JOIN (
+            SELECT
+              author_username AS username,
+              COUNT(DISTINCT(date(date))) AS days_seen
+            FROM {Message()._meta.db_table}
+            WHERE chat_id = %s
+            GROUP BY username
+          ) AS days_seen
+          ON authors.username = days_seen.username
+      """
+      cursor.execute(sql, [chat.id, chat.id])
+      authors = [ dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
+
   with connection.cursor() as cursor:
       case = "CASE %s END AS daytime" % " ".join(['WHEN daytime = %s THEN "%s"' % (x[0], x[1]) for x in Message.DAYTIME_CHOICES])
       sql = 'SELECT date(date), %s, COUNT(*) FROM %s' % (case, Message()._meta.db_table)
       sql += ' WHERE chat_id = %s AND author_name not in ("Бот-менеджер", "Juggler Search") GROUP BY date(date), daytime'
       cursor.execute(sql, [chat.id])
-      stats = cursor.fetchall()
+      heatmap_stats = cursor.fetchall()
+
   context = {
     'chat': chat,
     'chat_messages': messages,
-    'stats': json.dumps(stats)
+    'authors': authors,
+    'stats': json.dumps(stats),
+    'heatmap_stats': json.dumps(heatmap_stats)
   }
 
   return render(request, 'explorer/explore_chat.html', context)
