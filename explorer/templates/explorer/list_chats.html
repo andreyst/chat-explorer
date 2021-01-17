@@ -8,33 +8,38 @@
 
 {% block content-header %}Imported chats <a class="btn btn-primary pull-right" href="{% url 'explorer:list_accounts' %}?from=import" role="button"><i class="fa fa-plus">&nbsp;</i> Import chat</a>{% endblock %}
 {% block content %}
-{% if messages %}
-  {% for message in messages %}
-    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
-  {% endfor %}
-{% endif %}
-<div>
-{% if not chats %}
-  You do not have any chats imported.
-{% else %}
-  <div class="box-body no-padding">
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th style="width: 10px">#</th>
-          <th>Name</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for chat in chats %}
-        <tr>
-          <td style="width: 10px"><h4>{{chat.id}}</h4></td>
-          <td><h4><a href="{% url 'explorer:explore_chat' chat_id=chat.id %}"> {{ chat.title }}</a></h4></td>
-        </tr>
+<div class="box box-default box-content">
+  <div class="box-body box-body-content">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
       {% endfor %}
-    </tbody></table>
+    {% endif %}
+    <div>
+    {% if not chats %}
+      You do not have any chats imported.
+    {% else %}
+      <div class="box-body no-padding">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th style="width: 10px">#</th>
+              <th>Name</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for chat in chats %}
+            <tr>
+              <td style="width: 10px"><h4>{{chat.id}}</h4></td>
+              <td><h4><a href="{% url 'explorer:explore_chat' chat_id=chat.id %}"> {{ chat.title }}</a></h4></td>
+            </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    {% endif %}
+    </div>
   </div>
-{% endif %}
+  <!-- /.box-body -->
 </div>
-
+<!-- /.box -->
 {% endblock %}

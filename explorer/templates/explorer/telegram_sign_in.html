@@ -2,12 +2,18 @@
 
 {% block content-header %}Telegram sign in code{% endblock %}
 {% block content %}
-{% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>{% endif %}
+<div class="box box-default box-content">
+  <div class="box-body box-body-content">
+    {% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'explorer:telegram_sign_in' account_id=account_id telegram_phone_hash=telegram_phone_hash %}" method="post">
-{% csrf_token %}
-Telegram has sent you the code, please enter it below<br/>
-Telegram code: <input type="text" name="telegram_code" value="" placeholder="00000"/>
-<input type="submit" name="submit" value="Login" />
-</form>
+    <form action="{% url 'explorer:telegram_sign_in' account_id=account_id telegram_phone_hash=telegram_phone_hash %}" method="post">
+    {% csrf_token %}
+    Telegram has sent you the code, please enter it below<br/>
+    Telegram code: <input type="text" name="telegram_code" value="" placeholder="00000"/>
+    <input type="submit" name="submit" value="Login" />
+    </form>
+  </div>
+  <!-- /.box-body -->
+</div>
+<!-- /.box -->
 {% endblock %}

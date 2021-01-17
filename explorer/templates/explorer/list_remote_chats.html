@@ -8,23 +8,29 @@
 
 {% block content-header %}Choose remote chat to import from {{ account_login }}{% endblock %}
 {% block content %}
-{% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>
-{% else %}
-  <div>
-  {% if not chats %}
-    No chats found.
-  {% else %}
-  <div class="box-body no-padding">
-    <table class="table table-striped">
-      <tbody>
-    {% for chat in chats %}
-                <tr>
-                  <td><h4><a href="{% url 'explorer:import_remote_chat' account_id=account_id remote_id=chat.remote_id remote_type=chat.remote_type %}?title={{ chat.title|urlencode}}&amp;original_title={{ chat.title|urlencode }}">{{ chat.title }}</a></h4></td>
-                </tr>
-    {% endfor %}
-    </tbody></table>
+<div class="box box-default box-content">
+  <div class="box-body box-body-content">
+    {% if error_message %}<p><strong style="color: red">{{ error_message }}</strong></p>
+    {% else %}
+      <div>
+      {% if not chats %}
+        No chats found.
+      {% else %}
+      <div class="box-body no-padding">
+        <table class="table table-striped">
+          <tbody>
+        {% for chat in chats %}
+                    <tr>
+                      <td><h4><a href="{% url 'explorer:import_remote_chat' account_id=account_id remote_id=chat.remote_id remote_type=chat.remote_type %}?title={{ chat.title|urlencode}}&amp;original_title={{ chat.title|urlencode }}">{{ chat.title }}</a></h4></td>
+                    </tr>
+        {% endfor %}
+        </tbody></table>
+      </div>
+      {% endif %}
+      </div>
+    {% endif %}
   </div>
-  {% endif %}
-  </div>
-{% endif %}
+  <!-- /.box-body -->
+</div>
+<!-- /.box -->
 {% endblock %}

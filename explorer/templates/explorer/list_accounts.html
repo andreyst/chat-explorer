@@ -14,21 +14,27 @@
   {% endif %} <a class="btn btn-primary pull-right" href="{% url 'explorer:add_account' %}" role="button"><i class="fa fa-plus">&nbsp;</i> Add chat account</a>{% endblock %}
   }
 {% block content %}
-<div>
-{% if not accounts %}
-  You do not currently have any chat accounts.
-{% else %}
-  <div class="box-body no-padding">
-    <table class="table table-striped">
-      <tbody>
-      {% for account in accounts %}
-        <tr>
-          <td><h4><a href="{% url 'explorer:list_remote_chats' account_id=account.id %}">{{ account.name }}</a></h4></td>
-        </tr>
-      {% endfor %}
-    </tbody></table>
+<div class="box box-default box-content">
+  <div class="box-body box-body-content">
+    <div>
+    {% if not accounts %}
+      You do not currently have any chat accounts.
+    {% else %}
+      <div class="box-body no-padding">
+        <table class="table table-striped">
+          <tbody>
+          {% for account in accounts %}
+            <tr>
+              <td><h4><a href="{% url 'explorer:list_remote_chats' account_id=account.id %}">{{ account.name }}</a></h4></td>
+            </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    {% endif %}
   </div>
-{% endif %}
+  <!-- /.box-body -->
+</div>
+<!-- /.box -->
 </div>
 
 {% endblock %}
