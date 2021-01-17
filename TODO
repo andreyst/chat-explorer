@@ -9,3 +9,48 @@ TODO:
  ✔ Add history downloading in batch @done (18-01-12 00:02)
  ✔ Use good HTML template @done (18-01-12 00:02)
 
+Next steps:
+ ☐ Show only partial chat:
+   ☐ Go to requested hour/day/week/month/message:
+     ☐ load +51 messages below and 11 above. If there are 51/11 messages, show 50/10 and mark that there's more. When scrolled to 0/max, if there's more, load from server, repeat
+     ☐ When requesting data, mark seen beginnings of hour/day/week/month and scroll to them when needed without reloading history
+ ☐ Statistics:
+   ☐ Messages and authors chart
+   ☐ Total/by roles
+   ☐ Compare to other chat
+ ☐ Authors:
+   ☐ Top authors
+   ☐ Roles: user, admin, bot. Switch when browsing
+   ☐ Filter by name/login
+   ☐ Author stats
+     ☐ Total messages
+     ☐ Average messages per day in active days
+     ☐ Number of days seen, detalization of days
+     ☐ Number of requests
+   ☐ List last N messages inline with go to
+   ☐ Author page:
+     ☐ All requests by author
+     ☐ All days seen
+ ☐ Requests
+   ☐ Generate when syncing data: first message during every day if there's not a request already
+   ☐ Fields:
+     ☐ Processed/not processed
+     ☐ Level: low, medium, high, critical
+     ☐ Note: custom string
+     ☐ Tags: custom for every account with defaults
+   ☐ Table browsable from keyboard, shortcuts to assign:
+     ☐ Component
+   ☐ Create ticket from request
+ ☐ Day parts (ex. heatmap):
+   ☐ Bar chart
+   ☐ Heatmap
+ ☐ Sidebar:
+   ☐ Pills for processed/level/note/tags
+ ☐ Explorer:
+   ☐ Multiselect
+   ☐ Create requests from multiple messages
+   ☐ Edit requests
+   ☐ Show tickets
+ ☐ Overall:
+   ☐ Time picker
+   ☐ Chat selector
