@@ -1,4 +1,4 @@
-from .models import MessengerType, Account, ChatType, Chat, Message
+from .models import MessengerType, Account, ChatType, Chat, Message, AuthorRole
 from .tasks import sync_telegram_chat
 from datetime import datetime
 from datetime import timedelta
@@ -7,7 +7,8 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
 from django.db import connection
-from django.http import HttpResponse
+from django.db.models import Min
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render, redirect
 from telethon.sync import TelegramClient
@@ -15,10 +16,12 @@ from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty
 from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 from telethon.tl.types import User as TelegramUser
+import pytz
 import json
 import pprint
 import re
 import asyncio
+from .utils import fill_sparse_stats, generate_dates
 
 def login(request):
   user = authenticate(request, username=settings.DEFAULT_USER_NAME, password=settings.DEFAULT_USER_PASSWORD)
@@ -258,50 +261,133 @@ def explore_chat(request, chat_id):
   # messages = Message.objects.filter(chat_id=chat.id).all()
   messages = None
 
+  group = request.GET.get('group', "w")
+  if group not in ["d", "w", "m"]:
+    raise RuntimeError("Unsupported group value")
+
+  if group == "d":
+    format_str = "YYYY-MM-DD"
+  elif group == "w":
+    format_str = "YYYY-WW"
+  elif group == "m":
+    format_str = "YYYY-MM"
+
+  min_date = Message.objects.filter(chat_id=chat_id).aggregate(min_date=Min('date')).get('min_date')
+  if min_date is None:
+    raise RuntimeError("Case when chat has no messages is unhandled correctly")
+
+  dates = generate_dates(min_date, group=group)
+  dates_str = "(VALUES {}) AS dates(date)".format(", ".join([f"('{date}')" for date in dates]))
+
   with connection.cursor() as cursor:
+      sql = "SELECT %s"
       sql = f"""
           SELECT
-              date(date) AS day,
+              roles.role,
+              dates.date,
+              COALESCE(messages.messages_count, 0),
+              COALESCE(messages.authors_count, 0)
+          FROM {dates_str}
+          CROSS JOIN (VALUES (0), (1), (2), (3)) AS roles(role)
+          LEFT JOIN
+          (
+            SELECT
+              to_char(date, '{format_str}') AS date,
+              COALESCE(author_roles.role, 0) AS role,
               COUNT(*) AS messages_count,
               COUNT(DISTINCT(author_username)) AS authors_count
-          FROM {Message()._meta.db_table}
-          WHERE
-              chat_id = %s
-          GROUP BY day
-          ORDER BY day ASC
+            FROM {Message()._meta.db_table} AS messages
+            LEFT JOIN {AuthorRole()._meta.db_table} AS author_roles
+            ON
+              messages.chat_id = author_roles.chat_id
+              AND messages.author_username = author_roles.username
+            WHERE
+                messages.chat_id = %s
+            GROUP BY to_char(date, 'YYYY-WW'), COALESCE(role, 0)
+          ) AS messages
+          ON
+          dates.date = messages.date AND roles.role = messages.role
+          ORDER BY date, role ASC
       """
+      # sql = f"""
+      #     SELECT
+      #         roles.role,
+      #         dates.date,
+      #         messages.messages_count,
+      #         messages.authors_count
+      #     FROM {dates_str}
+      #     CROSS JOIN (VALUES (0), (1), (2), (3)) AS roles(role)
+      #     LEFT JOIN
+      #     (
+      #       SELECT
+      #         strftime("{format_str}", date) AS date,
+      #         author_roles.role AS role,
+      #         COUNT(*) AS messages_count,
+      #         COUNT(DISTINCT(author_username)) AS authors_count
+      #       FROM {Message()._meta.db_table} AS messages
+      #       LEFT JOIN {AuthorRole()._meta.db_table} AS author_roles
+      #       ON
+      #         messages.chat_id = author_roles.chat_id
+      #         AND messages.author_username = author_roles.username
+      #       WHERE
+      #           messages.chat_id = %s
+      #       GROUP BY date, role
+      #     )
+      #     ON
+      #     dates.date = messages.date AND roles.role = messages.role
+      #     ORDER BY day, role ASC
+      # """
+      print(sql, chat.id)
       cursor.execute(sql, [chat.id])
       # stats = cursor.fetchall()
-      sparse_message_stats = cursor.fetchall()
+      stats = cursor.fetchall()
 
-      stats = []
+  # with connection.cursor() as cursor:
+  #     sql = f"""
+  #         SELECT
+  #             MIN(date)
+  #         FROM {Message()._meta.db_table}
+  #         WHERE
+  #             chat_id = 100
+  #     """
+  #     cursor.execute(sql)
+  #     # stats = cursor.fetchall()
+  #     min_id = cursor.fetchall()[0][0]
+  #     print(min_id)
 
-      date_cursor = None
-      for entry in sparse_message_stats:
-        date = datetime.strptime(entry[0], "%Y-%m-%d")
 
-        if date_cursor is None:
-          date_cursor = date
-        else:
-          while date_cursor < date:
-            stats.append( (date_cursor.strftime("%Y-%m-%d"), 0, 0) )
-            date_cursor += timedelta(days=1)
+  # with connection.cursor() as cursor:
+  #     sql = f"""
+  #         SELECT
+  #             COALESCE(role, 0),
+  #             strftime(date, {format_str}) AS day,
+  #             COUNT(*) AS messages_count,
+  #             COUNT(DISTINCT(author_username)) AS authors_count
+  #         FROM {Message()._meta.db_table} AS messages
+  #         LEFT JOIN {AuthorRole()._meta.db_table} AS author_roles
+  #         ON
+  #           messages.chat_id = author_roles.chat_id
+  #           AND messages.author_username = author_roles.username
+  #         WHERE
+  #             messages.chat_id = %s
+  #         GROUP BY day, role
+  #         ORDER BY day, role ASC
+  #     """
+  #     cursor.execute(sql, [chat.id])
+  #     # stats = cursor.fetchall()
+  #     sparse_stats = cursor.fetchall()
 
-        stats.append(entry)
-        date_cursor += timedelta(days=1)
-
-      today = datetime.now()
-      while date_cursor <= today:
-        stats.append( (date_cursor.strftime("%Y-%m-%d"), 0, 0) )
-        date_cursor += timedelta(days=1)
+  #     stats = fill_sparse_stats(sparse_stats)
 
   with connection.cursor() as cursor:
       sql = f"""
           SELECT
-            authors.name AS name,
-            authors.username AS username,
-            authors.messages AS messages,
-            days_seen.days_seen AS days_seen
+            authors.name,
+            authors.username,
+            authors.messages,
+            days_seen.days_seen,
+            authors_role.role,
+            authors_role.id AS role_id
           FROM (
             SELECT
                 author_name AS name,
@@ -309,7 +395,7 @@ def explore_chat(request, chat_id):
                 COUNT(*) AS messages
             FROM {Message()._meta.db_table}
             WHERE chat_id = %s
-            GROUP BY author_username
+            GROUP BY author_username, author_name
             ORDER BY messages DESC
           ) AS authors
           LEFT JOIN (
@@ -321,14 +407,16 @@ def explore_chat(request, chat_id):
             GROUP BY username
           ) AS days_seen
           ON authors.username = days_seen.username
+          LEFT JOIN {AuthorRole()._meta.db_table} AS authors_role
+          ON authors.username = authors_role.username
       """
       cursor.execute(sql, [chat.id, chat.id])
       authors = [ dict(zip([col[0] for col in cursor.description], row)) for row in cursor.fetchall()]
 
   with connection.cursor() as cursor:
-      case = "CASE %s END AS daytime" % " ".join(['WHEN daytime = %s THEN "%s"' % (x[0], x[1]) for x in Message.DAYTIME_CHOICES])
-      sql = 'SELECT date(date), %s, COUNT(*) FROM %s' % (case, Message()._meta.db_table)
-      sql += ' WHERE chat_id = %s AND author_name not in ("Бот-менеджер", "Juggler Search") GROUP BY date(date), daytime'
+      case = "CASE %s END AS daytime" % " ".join(["WHEN daytime = %s THEN '%s'" % (x[0], x[1]) for x in Message.DAYTIME_CHOICES])
+      sql = "SELECT to_char(date, 'YYYY-MM-DD') AS date, %s, COUNT(*) FROM %s" % (case, Message()._meta.db_table)
+      sql += " WHERE chat_id = %s AND author_name not in ('Бот-менеджер', 'Juggler Search') GROUP BY to_char(date, 'YYYY-MM-DD'), daytime"
       cursor.execute(sql, [chat.id])
       heatmap_stats = cursor.fetchall()
 
@@ -341,3 +429,22 @@ def explore_chat(request, chat_id):
   }
 
   return render(request, 'explorer/explore_chat.html', context)
+
+@login_required
+def change_author_role(request, chat_id):
+  username = request.GET.get('username')
+  role = int(request.GET.get('role'))
+
+  if role not in [AuthorRole.ROLE_USER, AuthorRole.ROLE_ADMIN, AuthorRole.ROLE_BOT]:
+    return JsonResponse({
+      "success": False,
+      "error_code": "UNKNOWN_ROLE",
+      "error": "Unknown role"
+    }, status=400)
+
+  obj, created = AuthorRole.objects.update_or_create(
+    chat_id=chat_id, username=username,
+    defaults={'role': role},
+  )
+
+  return JsonResponse({"success": True})

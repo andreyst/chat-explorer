@@ -9,7 +9,7 @@ Current version allows you to download your chat and build a heatmap of messages
 1. Clone this repo from github
 2. Install necessary python libraries:
 ```
-pip3 install Django telethon redis celery django-celery-results "celery[redis]" pytz tzlocal django-debug-toolbar
+pip3 install Django telethon redis celery django-celery-results "celery[redis]" pytz tzlocal django-debug-toolbar psycopg2-binary
 ```
 3. Copy settings
 ```
@@ -31,6 +31,12 @@ $ celery -A chatexplorer worker -l info
 
 $ python3 manage.py runserver
 (...django dev server will run in foreground)
+```
+8. Create database:
+```
+$ docker exec -it chat-explorer_postgres_1 psql -U postgres
+postgres=# create database chat_explorer;
+CREATE DATABASE
 ```
 
 # Usage

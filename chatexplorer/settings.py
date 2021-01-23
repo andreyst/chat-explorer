@@ -1,3 +1,6 @@
+import os
+import environ
+
 """
 Django settings for chatexplorer project.
 
@@ -9,18 +12,17 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
-
-import os
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+env = environ.Env()
+environ.Env.read_env(env_file=BASE_DIR + "/.env")  # reading .env file
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'w7&-s3bn29t3&*0goayj=+@!hafm@p7%&91=m(wz&j+#!=^f=s'
+SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -78,8 +80,12 @@ WSGI_APPLICATION = 'chatexplorer.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env.str("POSTGRES_DB_NAME"),
+        'USER': env.str("POSTGRES_USER"),
+        'PASSWORD': env.str("POSTGRES_PASSWORD"),
+        'HOST': env.str("POSTGRES_HOST"),
+        'PORT': env.str("POSTGRES_PORT"),
     }
 }
 

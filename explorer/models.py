@@ -77,3 +77,28 @@ class Message(models.Model):
           models.Index(fields=['chat_id', 'date', 'remote_id']),
           models.Index(fields=['chat_id', 'remote_id']),
       ]
+
+
+class AuthorRole(models.Model):
+    ROLE_USER = 0
+    ROLE_ADMIN = 1
+    ROLE_BOT = 2
+    ROLE_CHOICES = (
+        (ROLE_USER, 'User'),
+        (ROLE_ADMIN, 'Admin'),
+        (ROLE_BOT, 'Bot'),
+    )
+
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, default=0)
+    username = models.CharField(max_length=4096, default='')
+    role = models.PositiveSmallIntegerField(
+      choices=ROLE_CHOICES,
+      default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields= ['chat','username'], name="chat__username"),
+        ]
+
+    def __str__(self):
+      return str("%d, %s, %s" % (self.chat_id, self.username, self.role))

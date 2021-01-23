@@ -135,9 +135,9 @@
       <div class="tab-content">
         <div class="tab-pane active" id="tab_1">
           <div class="btn-group pull-right">
-            <button type="button" class="btn btn-default btn-sm active">D</button>
-            <button type="button" class="btn btn-default btn-sm">W</button>
-            <button type="button" class="btn btn-default btn-sm">M</button>
+            <a href="?group=d"><button type="button" class="btn btn-default btn-sm active">D</button></a>
+            <a href="?group=w"><button type="button" class="btn btn-default btn-sm">W</button></a>
+            <a href="?group=m"><button type="button" class="btn btn-default btn-sm">M</button></a>
           </div>
           <div id="messages-stats"></div>
           <div id="authors-stats"></div>
@@ -160,9 +160,9 @@
               <td>{{ author.days_seen }}</td>
               <td>
                 <div class="btn-group">
-                  <button type="button" class="btn btn-default">Admin</button>
-                  <button type="button" class="btn btn-default">Bot</button>
-                  <button type="button" class="btn btn-default active">None</button>
+                  <button type="button" onClick="changeRole(this, {{chat.id}}, '{{author.username}}', 0)" class="btn btn-default{% if author.role == 0 or author.role is None %} active{% endif %}">User</button>
+                  <button type="button" onClick="changeRole(this, {{chat.id}}, '{{author.username}}', 1)" class="btn btn-default{% if author.role == 1 %} active{% endif %}">Admin</button>
+                  <button type="button" onClick="changeRole(this, {{chat.id}}, '{{author.username}}', 2)" class="btn btn-default{% if author.role == 2 %} active{% endif %}">Bot</button>
                 </div>
               </td>
             </tr>
@@ -191,47 +191,94 @@ var resizeChatContainer = function() {
 $(window).resize(resizeChatContainer);
 resizeChatContainer();
 $('#chat').scrollTop($('#chat')[0].scrollHeight);
+
+function changeRole(el, chat_id, username, role) {
+  $(el).parent().find(".btn").removeClass("active")
+  $(el).addClass("active")
+  fetch(`/chats/${chat_id}/change_author_role?username=${username}&role=${role}`)
+    .then((response) => {
+      console.log(response);
+    })
+}
 </script>
 <script>
   var stats = {{ stats|safe }};
-  var messages_stats = stats.map(el => [Date.parse(el[0]), el[1]])
-  var authors_stats = stats.map(el => [Date.parse(el[0]), el[2]])
+  var user_messages_stats  = stats.filter(el => el[0] == 0).map(el => [el[1], el[2]])
+  var admin_messages_stats = stats.filter(el => el[0] == 1).map(el => [el[1], el[2]])
+  var bot_messages_stats   = stats.filter(el => el[0] == 2).map(el => [el[1], el[2]])
+  var user_authors_stats   = stats.filter(el => el[0] == 0).map(el => [el[1], el[3]])
+  var admin_authors_stats  = stats.filter(el => el[0] == 1).map(el => [el[1], el[3]])
+  var bot_authors_stats    = stats.filter(el => el[0] == 2).map(el => [el[1], el[3]])
 
   // MESSAGE STATS
   Highcharts.chart('messages-stats', {
+      chart: {
+          type: 'column'
+      },
       title: {
           text: 'Messages'
       },
       xAxis: {
-          type: "datetime",
+          type: "category",
           labels: {
             formatter: function() {
-              return Highcharts.dateFormat('%Y/%m/%d', this.value);
+              return this.value; //Highcharts.dateFormat('%Y/%m/%d', this.value);
             }
           },
       },
+      tooltip: {
+        shared: true,
+      },
+      plotOptions: {
+          column: {
+              stacking: 'normal',
+          }
+      },
       series: [{
-          name: 'Messages',
-          data: messages_stats
+          name: 'User',
+          data: user_messages_stats
+      }, {
+          name: 'Admin',
+          data: admin_messages_stats
+      }, {
+          name: 'Bot',
+          data: bot_messages_stats
       }],
   });
 
   // AUTHORS STATS
   Highcharts.chart('authors-stats', {
+      chart: {
+         type: 'column'
+      },
       title: {
           text: 'Authors'
       },
       xAxis: {
-          type: "datetime",
+          type: "category",
           labels: {
             formatter: function() {
-              return Highcharts.dateFormat('%Y/%m/%d', this.value);
+              return this.value; Highcharts.dateFormat('%Y/%m/%d', this.value);
             }
           },
       },
+      tooltip: {
+        shared: true,
+      },
+      plotOptions: {
+          column: {
+              stacking: 'normal',
+          }
+      },
       series: [{
-          name: 'Authors',
-          data: authors_stats
+          name: 'User',
+          data: user_authors_stats
+      }, {
+          name: 'Admin',
+          data: admin_authors_stats
+      }, {
+          name: 'Bot',
+          data: bot_authors_stats
       }],
   });
 
