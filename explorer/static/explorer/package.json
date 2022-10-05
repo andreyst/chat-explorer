@@ -8,7 +8,6 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "R2": "^1.4.3",
     "grunt": "^0.4.5",
     "grunt-bootlint": "^0.9.1",
     "grunt-contrib-clean": "^0.6.0",
@@ -26,7 +25,8 @@
     "grunt-less": "^0.1.7",
     "grunt-notify": "^0.4.5",
     "grunt-text-replace": "^0.4.0",
-    "less": "^2.7.2"
+    "less": "^2.7.2",
+    "R2": "^1.4.3"
   },
   "dependencies": {
     "bootstrap": "^3.3.7",
