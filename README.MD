@@ -9,7 +9,7 @@ Current version allows you to download your chat and build a heatmap of messages
 1. Clone this repo from github
 2. Install necessary python libraries:
 ```
-pip3 install Django telethon redis celery django-celery-results "celery[redis]" pytz tzlocal django-debug-toolbar psycopg2-binary
+pip3 install Django telethon redis celery django-celery-results "celery[redis]" pytz tzlocal django-debug-toolbar psycopg2-binary python-dateutil
 ```
 3. Copy settings
 ```
@@ -21,6 +21,7 @@ $ cp local_settings.py.example local_settings.py
 6. (Optional) Use your existing db for django installation. By default it uses sqlite database.
 7. Run all the components (currently this app is supposed to be run locally for your own chats)
 ```
+$ cd ..
 $ docker-compose up -d
 Starting chatexplorer_redis_1 ...
 Starting chatexplorer_redis_1 ... done
@@ -37,6 +38,10 @@ $ python3 manage.py runserver
 $ docker exec -it chat-explorer_postgres_1 psql -U postgres
 postgres=# create database chat_explorer;
 CREATE DATABASE
+```
+9. Apply migrations:
+```
+$ python3 manage.py migrate
 ```
 
 # Usage
